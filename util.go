@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"html/template"
-	"fmt"
 )
 
 var templates = make(map[string]*template.Template)
@@ -13,7 +12,6 @@ func compileTemplate(tmpls ...string) {
 	for i, _ := range tmpls {
 		tmpls[i] = templateDir + tmpls[i] + templateExtension
 	}
-	fmt.Println(tmpls)
 	templates[tmpl] = template.Must(template.ParseFiles(tmpls...))
 }
 
