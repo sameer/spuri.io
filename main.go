@@ -20,7 +20,10 @@ func main() {
 	initGlobalContext()
 	bindHandlers()
 	fmt.Println("Ready!")
-	http.ListenAndServe(":8000", nil)
+	err := http.ListenAndServe("[0:0:0:0:0:0:0:0]:80", nil)
+	if err != nil {
+		fmt.Printf("Error while launching %v", err)
+	}
 }
 
 func bindHandlers() {
