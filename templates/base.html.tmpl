@@ -1,0 +1,28 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html>
+<head>
+	{{ template "head" .}}
+	<link rel="stylesheet" href="/style.css" type="text/css">
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+	<link rel="icon" type="image/png" href="/static/favicon.png" />
+	<title>{{ template "title" .}} | spuri.io</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <nav class="nav" tabindex="-1" onclick="this.focus()">
+    	<div class="container">
+    		    <a href="/" class="pagename current">spuri.io</a>
+    		{{ range $i := .NavItems }}
+    		    <a href="{{ $i.Link }}">{{ $i.Name }}</a>
+    		{{ end }}
+    	</div>
+    </nav>
+    <div class="container">
+    	</br>
+    	{{ template "content" .}}
+    </div>
+</body>
+</html>
+{{end}}

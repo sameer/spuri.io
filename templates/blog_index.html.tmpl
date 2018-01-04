@@ -1,0 +1,15 @@
+{{ define "head" }}{{ end }}
+{{ define "title" }}My Blog{{ end }}
+{{ define "content" }}
+{{ if .Index  }}
+	<h2>Recent Posts</h2>
+	{{ range $i := .Index }}
+		<span><h3><a href="/blog/{{ $i.Date }}/{{ $i.Page }}">{{ $i.Title }}</a> {{ $i.Date }}</h3></span>
+		</br>
+	{{ end }}
+{{ end }}
+{{ if not .Index }}
+	<h2> I haven't posted anything yet. Come check back later!</h2>
+{{ end }}
+
+{{ end }}

@@ -1,0 +1,13 @@
+{{ define "head" }}{{ end }}
+{{ define "title" }}c0dart Gallery{{ end }}
+{{ define "content" }} 
+{{ if .Images }}
+<h2>Gallery</h2>
+{{ range $img := .Images }}
+<h3>{{ $img }}</h3></br>
+{{ end }}
+{{ end }}
+{{ if not .Images }}
+<h2>No art yet, check back later!</h2>
+{{ end }}
+{{ end }}
