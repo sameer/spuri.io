@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 	"os"
+	"bytes"
+	"bufio"
 )
 
 type C0dartContext struct {
@@ -31,7 +33,7 @@ const (
 	galleryHeight = 1080 / 2
 )
 
-var resizerImages = make(map[string]mogrify.Image)
+var resizerImages = make(map[string]bytes.Buffer)
 
 func c0dartHandler(w http.ResponseWriter, r *http.Request) {
 	c0dartUpdateContext()
@@ -49,7 +51,7 @@ func c0dartHandler(w http.ResponseWriter, r *http.Request) {
 		for _, c0dartImage := range c0dartContext.Images {
 			if c0dartImage.Filename == fileName {
 				if err == nil && width == galleryWidth && height == galleryHeight {
-					resizedImage, ok := resizerImages[fileName]
+					resizedImageBuffer, ok := resizerImages[fileName]
 					if !ok {
 						file, err := os.Open(c0dartDir + fileName)
 						if err != nil {
@@ -61,15 +63,16 @@ func c0dartHandler(w http.ResponseWriter, r *http.Request) {
 							fmt.Printf("C0dart resizer unable to decode file %s with error %v\n", fileName, err)
 							break
 						}
-						resizedImage, err = img.NewResized(mogrify.Bounds{Width: galleryWidth, Height: galleryHeight})
+						resizedImage, err := img.NewResized(mogrify.Bounds{Width: galleryWidth, Height: galleryHeight})
 						img.Destroy()
 						if err != nil {
 							fmt.Printf("C0dart resizer unable to resize file %s with error %v\n", fileName, err)
 							break
 						}
-						resizerImages[fileName] = resizedImage
+						mogrify.EncodePng(bufio.NewWriter(&resizedImageBuffer), resizedImage)
+						resizerImages[fileName] = resizedImageBuffer
 					}
-					mogrify.EncodePng(w, resizedImage)
+					resizedImageBuffer.WriteTo(w)
 					return
 				}
 				break
