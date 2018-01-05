@@ -10,6 +10,7 @@ import (
 	"os"
 	"bytes"
 	"bufio"
+	"strconv"
 )
 
 type C0dartContext struct {
@@ -72,6 +73,7 @@ func c0dartHandler(w http.ResponseWriter, r *http.Request) {
 						mogrify.EncodePng(bufio.NewWriter(&resizedImageBuffer), resizedImage)
 						resizerImages[fileName] = resizedImageBuffer
 					}
+					w.Header().Add("Content-Length", strconv.Itoa(resizedImageBuffer.Len()))
 					resizedImageBuffer.WriteTo(w)
 					return
 				}
