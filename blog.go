@@ -23,11 +23,10 @@ type BlogContext struct {
 var pages []BlogPage = nil
 
 func blogHandler(w http.ResponseWriter, r *http.Request) {
-	url := r.URL.Path[len(blogHandlerPath):]
-	if len(url) == 0 { // Request for index
+	if len(r.URL.Path) == 0 { // Request for index
 		blogServeIndex(w, r)
-	} else { // Something else
-		blogServePage(w, r, url)
+	} else { // Req for page, need to do handling of this
+		blogServePage(w, r, r.URL.Path)
 	}
 }
 

@@ -4,8 +4,9 @@
 {{ if .Images }}
 <h2>Gallery</h2>
 {{ range $img := .Images }}
-<img src="{{ $img.Href }}" alt="{{ $img.Name }}"></img>
-<h3>{{ $img.Name }}</h3></br>
+<img src="{{ $img.Href }}" alt="{{ $img.Title }}"></img>
+<h3>{{ $img.Title }}</h3></br>
+<p>{{ $img.Desc }}</p>
 {{ end }}
 {{ end }}
 {{ if not .Images }}

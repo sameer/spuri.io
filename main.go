@@ -6,12 +6,17 @@ import (
 )
 
 const (
+	staticHandlerPath = "/static/"
 	cssHandlerPath    = "/style.css"
-	cssFilePath       = "./static/style.css"
+	indexHandlerPath  = "/"
 	blogHandlerPath   = "/blog/"
-	c0dartPath        = "/c0dart/"
-	templateExtension = ".html.tmpl"
+	c0dartHandlerPath = "/c0dart/"
+
+	staticDir         = "./static/"
+	cssFilePath       = staticDir + "style.css"
 	templateDir       = "./templates/"
+	templateExtension = ".html.tmpl"
+	c0dartDir         = staticDir + "c0dart/"
 )
 
 func main() {
@@ -20,18 +25,18 @@ func main() {
 	initGlobalContext()
 	bindHandlers()
 	fmt.Println("Ready!")
-	err := http.ListenAndServe("[0:0:0:0:0:0:0:0]:80", nil)
+	err := http.ListenAndServe(":8000", nil)
 	if err != nil {
 		fmt.Printf("Error while launching %v", err)
 	}
 }
 
 func bindHandlers() {
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.Handle("/static/", http.StripPrefix(staticHandlerPath, http.FileServer(http.Dir(staticDir))))
 	http.HandleFunc(cssHandlerPath, cssHandler)
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc(blogHandlerPath, blogHandler)
-	http.HandleFunc(c0dartPath, c0dartHandler)
+	http.HandleFunc(indexHandlerPath, indexHandler)
+	http.Handle(blogHandlerPath, http.StripPrefix(blogHandlerPath, http.HandlerFunc(blogHandler)))
+	http.Handle(c0dartHandlerPath, http.StripPrefix(c0dartHandlerPath, http.HandlerFunc(c0dartHandler)))
 }
 
 func compileTemplates() {
@@ -39,5 +44,5 @@ func compileTemplates() {
 	compileTemplate("index", "base")
 	compileTemplate("blog_index", "base")
 	compileTemplate("blog_page", "base")
-	compileTemplate("c0dart", "base")
+	compileTemplate("c0dart_gallery", "base")
 }

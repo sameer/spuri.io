@@ -6,6 +6,8 @@ import (
 	"fmt"
 )
 
+// Keep the file in-memory because it's only several KB & lowers load time.
+
 var cssFile []byte = nil
 
 func cssHandler(w http.ResponseWriter, r *http.Request) {
