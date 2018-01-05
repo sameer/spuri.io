@@ -76,7 +76,7 @@ func c0dartHandler(w http.ResponseWriter, r *http.Request) {
 						resizerImages[fileName] = resizedImageBuffer
 					}
 					w.Header().Add("Content-Length", strconv.Itoa(resizedImageBuffer.Len()))
-					w.Header().Add("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", c0dartImage.Filename))
+					w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", c0dartImage.Filename))
 					w.Header().Add("Cache-Control", fmt.Sprintf("private, max-age=%d", int(c0dartCacheTime.Seconds())))
 					resizedImageBuffer.WriteTo(w)
 					return
