@@ -29,14 +29,16 @@ type C0dartImage struct {
 }
 
 const (
-	resizerPath   = "resizer/"
-	galleryWidth  = 1920 / 2 // Reduction of transfer bandwidth
-	galleryHeight = 1080 / 2
+	resizerPath     = "resizer/"
+	galleryWidth    = 1920 / 2 // Reduction of transfer bandwidth
+	galleryHeight   = 1080 / 2
+	c0dartCacheTime = time.Duration(5 * time.Minute)
 )
 
 var resizerImages = make(map[string]bytes.Buffer)
 
 func c0dartHandler(w http.ResponseWriter, r *http.Request) {
+	globalSetHeaders(w, r)
 	c0dartUpdateContext()
 	if r.URL.Path == "" { // Gallery
 		renderTemplate(w, "c0dart_gallery", c0dartContext)
@@ -74,6 +76,7 @@ func c0dartHandler(w http.ResponseWriter, r *http.Request) {
 						resizerImages[fileName] = resizedImageBuffer
 					}
 					w.Header().Add("Content-Length", strconv.Itoa(resizedImageBuffer.Len()))
+					w.Header().Add("Cache-Control", fmt.Sprintf("private, max-age=%d", strconv.Itoa(int(c0dartCacheTime.Seconds()))))
 					resizedImageBuffer.WriteTo(w)
 					return
 				}
@@ -103,7 +106,7 @@ func c0dartUpdateContext() {
 		c0dartContext = &C0dartContext{
 			GlobalContext: globalContext,
 			Images:        c0dartImages,
-			NextUpdate:    time.Now().Add(time.Duration(5 * time.Minute)),
+			NextUpdate:    time.Now().Add(c0dartCacheTime),
 		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 var cssFile []byte = nil
 
 func cssHandler(w http.ResponseWriter, r *http.Request) {
+	globalSetHeaders(w, r)
 	if cssFile == nil {
 		content, err := ioutil.ReadFile(cssFilePath)
 		if err != nil {

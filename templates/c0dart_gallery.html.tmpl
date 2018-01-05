@@ -4,7 +4,7 @@
 {{ if .Images }}
 <h2>Gallery</h2>
 {{ range $img := .Images }}
-<img src="{{ $img.Href }}" alt="{{ $img.Title }}"></img>
+<img src="{{ $img.Href }}" alt="{{ $img.Title }}">
 <h3>{{ $img.Title }}</h3><br>
 <p>{{ $img.Desc }}</p>
 {{ end }}

@@ -126,7 +126,7 @@ h1{
     font-size:2em
 }
 .ico{
-    font:33px Arial Unicode MS,Lucida Sans Unicode
+    font:33px 'Arial Unicode MS','Lucida Sans Unicode'
 }
 .addon,.btn-sm,.nav,textarea,input,select{
     outline:0;

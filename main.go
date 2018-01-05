@@ -32,7 +32,7 @@ func main() {
 }
 
 func bindHandlers() {
-	http.Handle("/static/", http.StripPrefix(staticHandlerPath, http.FileServer(http.Dir(staticDir))))
+	http.Handle("/static/", http.StripPrefix(staticHandlerPath, http.HandlerFunc(staticHandler)))
 	http.HandleFunc(cssHandlerPath, cssHandler)
 	http.HandleFunc(indexHandlerPath, indexHandler)
 	http.Handle(blogHandlerPath, http.StripPrefix(blogHandlerPath, http.HandlerFunc(blogHandler)))

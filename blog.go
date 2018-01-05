@@ -23,6 +23,7 @@ type BlogContext struct {
 var pages []BlogPage = nil
 
 func blogHandler(w http.ResponseWriter, r *http.Request) {
+	globalSetHeaders(w, r)
 	if len(r.URL.Path) == 0 { // Request for index
 		blogServeIndex(w, r)
 	} else { // Req for page, need to do handling of this
