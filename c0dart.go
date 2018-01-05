@@ -67,6 +67,7 @@ func c0dartHandler(w http.ResponseWriter, r *http.Request) {
 							fmt.Printf("C0dart resizer unable to resize file %s with error %v\n", fileName, err)
 							break
 						}
+						resizerImages[fileName] = resizedImage
 					}
 					mogrify.EncodePng(w, resizedImage)
 					return
