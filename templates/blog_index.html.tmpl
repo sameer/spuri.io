@@ -5,7 +5,7 @@
 	<h2>Recent Posts</h2>
 	{{ range $i := .Index }}
 		<span><h3><a href="/blog/{{ $i.Date }}/{{ $i.Page }}">{{ $i.Title }}</a> {{ $i.Date }}</h3></span>
-		</br>
+		<br>
 	{{ end }}
 {{ end }}
 {{ if not .Index }}
