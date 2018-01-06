@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"bufio"
 	"strconv"
+	"unicode"
 )
 
 type C0dartContext struct {
@@ -97,7 +98,7 @@ func c0dartUpdateContext() {
 				c0dartImages[i] = C0dartImage{
 					Filename: img.Name(),
 					Href:     fmt.Sprintf(c0dartHandlerPath+resizerPath+"\""+img.Name()+"\"/%d/%d", galleryWidth, galleryHeight),
-					Title:    img.Name(),
+					Title:    c0dartFileNameToTitle(img.Name()),
 					Desc:     "", // TODO: make these real
 				}
 			}
@@ -110,4 +111,18 @@ func c0dartUpdateContext() {
 			NextUpdate:    time.Now().Add(c0dartCacheTime),
 		}
 	}
+}
+
+func c0dartFileNameToTitle(fileName string) string {
+	var outstring string = ""
+	for _, r := range fileName {
+		if unicode.IsUpper(r) {
+			outstring += " " + string(r)
+		} else if r == '.' {
+			break
+		} else {
+			outstring += string(r)
+		}
+	}
+	return outstring
 }

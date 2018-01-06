@@ -10,8 +10,9 @@ type GlobalContext struct {
 }
 
 type NavItem struct {
-	Name string
-	Link string
+	Name    string
+	Link    string
+	NewPage bool
 }
 
 type NavItems []NavItem
@@ -20,9 +21,10 @@ var globalContext *GlobalContext = nil
 
 func initGlobalContext() {
 	globalContext = &GlobalContext{NavItems: NavItems{
-		NavItem{"c0dart", "/c0dart"},
-		NavItem{"Blog", "/blog"},
-		NavItem{"Github", "https://github.com/sameer"},
+		NavItem{"c0dart", "/c0dart/", false,},
+		NavItem{"Blog", "/blog/", false,},
+		NavItem{"Github", "https://github.com/sameer", false,},
+		NavItem{"About", "/about", false},
 	}}
 }
 

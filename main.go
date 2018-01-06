@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"fmt"
+	"os"
 )
 
 const (
@@ -11,12 +12,17 @@ const (
 	indexHandlerPath  = "/"
 	blogHandlerPath   = "/blog/"
 	c0dartHandlerPath = "/c0dart/"
+	aboutHandlerPath  = "/about"
 
 	staticDir         = "./static/"
 	cssFilePath       = staticDir + "style.css"
 	templateDir       = "./templates/"
 	templateExtension = ".html.tmpl"
 	c0dartDir         = staticDir + "c0dart/"
+
+	prodBindAddress = "[0:0:0:0:0:0:0:0]:80"
+	devBindAddress =  "127.0.0.1:8000"
+	devEnvironmentVariable = "DEV=1"
 )
 
 func main() {
@@ -25,9 +31,14 @@ func main() {
 	initGlobalContext()
 	bindHandlers()
 	fmt.Println("Ready!")
-	err := http.ListenAndServe("[0:0:0:0:0:0:0:0]:80", nil)
+
+	bindAddress := prodBindAddress
+	if contains(os.Environ(), devEnvironmentVariable) {
+		bindAddress = devBindAddress
+	}
+	err := http.ListenAndServe(bindAddress, nil)
 	if err != nil {
-		fmt.Printf("Error while launching %v", err)
+		fmt.Printf("Error while launching %v\n", err)
 	}
 }
 
@@ -37,6 +48,7 @@ func bindHandlers() {
 	http.HandleFunc(indexHandlerPath, indexHandler)
 	http.Handle(blogHandlerPath, http.StripPrefix(blogHandlerPath, http.HandlerFunc(blogHandler)))
 	http.Handle(c0dartHandlerPath, http.StripPrefix(c0dartHandlerPath, http.HandlerFunc(c0dartHandler)))
+	http.HandleFunc(aboutHandlerPath, aboutHandler)
 }
 
 func compileTemplates() {
@@ -45,4 +57,5 @@ func compileTemplates() {
 	compileTemplate("blog_index", "base")
 	compileTemplate("blog_page", "base")
 	compileTemplate("c0dart_gallery", "base")
+	compileTemplate("about", "base")
 }

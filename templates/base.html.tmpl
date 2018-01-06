@@ -15,8 +15,9 @@
     	<div class="container">
     		    <a href="/" class="pagename current">spuri.io</a>
     		{{ range $i := .NavItems }}
-    		    <a href="{{ $i.Link }}">{{ $i.Name }}</a>
+    		    <a href="{{ $i.Link }}" {{ if $i.NewPage }}target="_blank"{{ end }}>{{ $i.Name }} {{ if $i.NewPage }}&#128279;{{ end }}</a>
     		{{ end }}
+    		    <a href="#" onclick="document.body.style.background='#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6);">&#128161;</a>
     	</div>
     </nav>
     <div class="container">
