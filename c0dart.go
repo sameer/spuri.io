@@ -25,6 +25,7 @@ var c0dartContext *C0dartContext = nil
 type C0dartImage struct {
 	Filename string
 	Href     string
+	Src      string
 	Title    string
 	Desc     string
 }
@@ -74,6 +75,7 @@ func c0dartHandler(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 						mogrify.EncodePng(bufio.NewWriter(&resizedImageBuffer), resizedImage)
+						resizedImage.Destroy()
 						resizerImages[fileName] = resizedImageBuffer
 					}
 					w.Header().Add("Content-Length", strconv.Itoa(resizedImageBuffer.Len()))
@@ -97,7 +99,8 @@ func c0dartUpdateContext() {
 			for i, img := range images {
 				c0dartImages[i] = C0dartImage{
 					Filename: img.Name(),
-					Href:     fmt.Sprintf(c0dartHandlerPath+resizerPath+"\""+img.Name()+"\"/%d/%d", galleryWidth, galleryHeight),
+					Href:     staticHandlerPath + "c0dart/" + img.Name(),
+					Src:      fmt.Sprintf(c0dartHandlerPath+resizerPath+"\""+img.Name()+"\"/%d/%d", galleryWidth, galleryHeight),
 					Title:    c0dartFileNameToTitle(img.Name()),
 					Desc:     "", // TODO: make these real
 				}
