@@ -25,7 +25,8 @@ var globalContext *GlobalContext = nil
 
 func (this *GlobalContext) Refresh() {
 	if this == nil {
-		globalContext = &GlobalContext{}
+		this = &GlobalContext{}
+		globalContext = this
 	}
 	if time.Now().After(globalContext.NextUpdate) {
 		*this = GlobalContext{NavItems: []NavItem{

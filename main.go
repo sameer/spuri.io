@@ -19,9 +19,10 @@ const (
 	templateDir       = "./templates/"
 	templateExtension = ".html.tmpl"
 	c0dartDir         = staticDir + "c0dart/"
+	blogDir           = "./blog/"
 
-	prodBindAddress = "[0:0:0:0:0:0:0:0]:80"
-	devBindAddress =  "127.0.0.1:8000"
+	prodBindAddress        = "[0:0:0:0:0:0:0:0]:80"
+	devBindAddress         = "127.0.0.1:8000"
 	devEnvironmentVariable = "DEV=1"
 )
 

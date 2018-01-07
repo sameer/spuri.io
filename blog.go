@@ -3,11 +3,16 @@ package main
 import (
 	"net/http"
 	"time"
+	"fmt"
 	"sort"
+	"path/filepath"
+	"os"
+	"io/ioutil"
 )
 
 const (
 	blogCacheTime = time.Duration(5 * time.Minute)
+	blogIndexMax  = 10
 )
 
 type BlogPage struct {
@@ -22,16 +27,22 @@ type BlogContext struct {
 	*GlobalContext
 	Index      []BlogPage
 	Page       *BlogPage
-	pages      []BlogPage
+	pages      map[time.Time]BlogPage
+	dates      []time.Time
 	NextUpdate time.Time
 }
 
 func blogHandler() http.HandlerFunc {
-	blogContext := &BlogContext{}
+	blogContext := &BlogContext{
+
+	}
 	blogServeIndex := func(w http.ResponseWriter, r *http.Request) {
 		renderTemplate(w, "blog_index", blogContext)
 	}
 	blogServePage := func(w http.ResponseWriter, r *http.Request) {
+		var dateStr string
+		var page int
+		fmt.Sscanf(r.URL.Path, "/%q/%d", &dateStr, &page)
 
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -47,15 +58,44 @@ func blogHandler() http.HandlerFunc {
 
 func (this *BlogContext) Refresh() {
 	if time.Now().After(this.NextUpdate) {
-		// TODO: refresh articles from dir
-		sort.Slice(this.pages, func(i, j int) bool { return this.pages[i].Modified.Before(this.pages[i].Modified) })
-		*this = BlogContext{
-			GlobalContext: globalContext,
-			Index:         this.pages,
-			Page:          nil,
-			pages:         this.pages,
-			NextUpdate:    time.Now().Add(blogCacheTime),
+		pages := make(map[time.Time]BlogPage)
+		filepath.Walk(blogDir, func(path string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				bytes, err := ioutil.ReadFile(path)
+				if err != nil {
+					return err
+				}
+				// TODO: get all fields from file somehow
+				pages[info.ModTime()] = BlogPage{
+					Title:    info.Name(),
+					Posted:   info.ModTime(),
+					Modified: info.ModTime(),
+					Author:   "",
+					Content:  string(bytes),
+				}
+			}
+			return err
+		})
+		dates := make([]time.Time, 0, len(pages))
+		for k, _ := range pages {
+			dates = append(dates, k)
 		}
+
+		sort.Slice(dates, func(i, j int) bool { return dates[i].After(dates[i]) })
+		Index := make([]BlogPage, 0, blogIndexMax)
+		for _, date := range dates {
+			Index = append(Index, pages[date])
+			if len(Index) == blogIndexMax {
+				break
+			}
+			if len(Index) == blogIndexMax {
+				break
+			}
+		}
+
+		this.dates = dates
+		this.Index = Index
+		this.NextUpdate = time.Now().Add(blogCacheTime)
 	}
 	this.GlobalContext.Refresh()
 }
