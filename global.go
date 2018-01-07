@@ -3,10 +3,16 @@ package main
 import (
 	"net/http"
 	"runtime"
+	"time"
+)
+
+const (
+	globalContextCacheTime = time.Duration(5 * time.Minute)
 )
 
 type GlobalContext struct {
-	NavItems NavItems
+	NavItems   []NavItem
+	NextUpdate time.Time
 }
 
 type NavItem struct {
@@ -15,17 +21,22 @@ type NavItem struct {
 	NewPage bool
 }
 
-type NavItems []NavItem
-
 var globalContext *GlobalContext = nil
 
-func initGlobalContext() {
-	globalContext = &GlobalContext{NavItems: NavItems{
-		NavItem{"c0dart", "/c0dart/", false,},
-		NavItem{"Blog", "/blog/", false,},
-		NavItem{"Github", "https://github.com/sameer", false,},
-		NavItem{"About", "/about", false},
-	}}
+func (this *GlobalContext) Refresh() {
+	if this == nil {
+		globalContext = &GlobalContext{}
+	}
+	if time.Now().After(globalContext.NextUpdate) {
+		*this = GlobalContext{NavItems: []NavItem{
+			NavItem{"c0dart", "/c0dart/", false,},
+			NavItem{"Blog", "/blog/", false,},
+			NavItem{"Github", "https://github.com/sameer", false,},
+			NavItem{"About", "/about", false},
+		},
+			NextUpdate: time.Now().Add(globalContextCacheTime),
+		}
+	}
 }
 
 func globalSetHeaders(w http.ResponseWriter, r *http.Request) {

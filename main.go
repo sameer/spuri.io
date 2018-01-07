@@ -28,7 +28,7 @@ const (
 func main() {
 	fmt.Println("Launching...")
 	compileTemplates()
-	initGlobalContext()
+	globalContext.Refresh()
 	bindHandlers()
 	fmt.Println("Ready!")
 
@@ -43,11 +43,11 @@ func main() {
 }
 
 func bindHandlers() {
-	http.Handle("/static/", http.StripPrefix(staticHandlerPath, http.HandlerFunc(staticHandler)))
+	http.Handle("/static/", http.StripPrefix(staticHandlerPath, staticHandler()))
 	http.HandleFunc(cssHandlerPath, cssHandler)
 	http.HandleFunc(indexHandlerPath, indexHandler)
-	http.Handle(blogHandlerPath, http.StripPrefix(blogHandlerPath, http.HandlerFunc(blogHandler)))
-	http.Handle(c0dartHandlerPath, http.StripPrefix(c0dartHandlerPath, http.HandlerFunc(c0dartHandler)))
+	http.Handle(blogHandlerPath, http.StripPrefix(blogHandlerPath, blogHandler()))
+	http.Handle(c0dartHandlerPath, http.StripPrefix(c0dartHandlerPath, c0dartHandler()))
 	http.HandleFunc(aboutHandlerPath, aboutHandler)
 }
 
