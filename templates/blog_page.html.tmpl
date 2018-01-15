@@ -1,8 +1,9 @@
+{{ define "head" }}{{ end }}
 {{ define "title" }}
 	{{ .Page.Title }}
 {{ end }}
 {{ define "content" }}
 	<h2>{{ .Page.Title }}</h2>
-	<h3>Posted on {{ .Page.Posted }} by {{ .Page.Author }}</h3>
+	<h3> By {{ .Page.Author }}, Last modified {{ (.Page.Modified.Format "Jan _2 2006 15:04 MST") }}</h3>
 	{{ .Page.Content }}
 {{ end }}

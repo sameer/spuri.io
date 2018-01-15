@@ -51,6 +51,8 @@ func c0dartHandler() http.HandlerFunc {
 			_, err := fmt.Sscanf(r.URL.Path, "resizer/%q/%d/%d", &fileName, &width, &height)
 			if err != nil {
 				fmt.Printf("%v: %v\n", err, r.URL.Path)
+				http.NotFound(w, r)
+				return
 			}
 			for _, c0dartImage := range c0dartContext.Images {
 				if c0dartImage.Filename == fileName {

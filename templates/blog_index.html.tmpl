@@ -4,7 +4,7 @@
 {{ if .Index  }}
 	<h2>Recent Posts</h2>
 	{{ range $i := .Index }}
-		<span><h3><a href="/blog/{{ $i.Date }}/{{ $i.Page }}">{{ $i.Title }}</a> {{ $i.Date }}</h3></span>
+		<span><h3><a href="/blog/{{ $i.Checksum }}">{{ $i.Title }}</a> {{ ($i.Modified.Format "2006-01-02") }}</h3></span>
 		<br>
 	{{ end }}
 {{ end }}
