@@ -1,16 +1,16 @@
 package main
 
 import (
-	"net/http"
-	"io/ioutil"
+	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/tobi/mogrify-go"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
-	"os"
-	"bytes"
-	"bufio"
-	"strconv"
 	"unicode"
 )
 

@@ -30,10 +30,10 @@ func (this *GlobalContext) Refresh() {
 	}
 	if time.Now().After(globalContext.NextUpdate) {
 		*this = GlobalContext{NavItems: []NavItem{
-			NavItem{"c0dart", "/c0dart/", false,},
-			NavItem{"Blog", "/blog/", false,},
-			NavItem{"Github", "https://github.com/sameer", false,},
-			NavItem{"About", "/about", false},
+			{"c0dart", "/c0dart/", false},
+			{"Blog", "/blog/", false},
+			{"Github", "https://github.com/sameer", false},
+			{"About", "/about", false},
 		},
 			NextUpdate: time.Now().Add(globalContextCacheTime),
 		}

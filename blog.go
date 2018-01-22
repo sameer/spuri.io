@@ -1,17 +1,17 @@
 package main
 
 import (
-	"net/http"
-	"time"
 	"fmt"
-	"sort"
-	"path/filepath"
-	"os"
-	"io/ioutil"
-	"hash/crc32"
 	"github.com/sameer/unsafe-markdown"
-	"strings"
+	"hash/crc32"
 	"html/template"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
 )
 
 const (
@@ -88,7 +88,7 @@ func (this *BlogContext) Refresh() {
 			return err
 		})
 		checksums := make([]uint32, 0, len(pages))
-		for k, _ := range pages {
+		for k := range pages {
 			checksums = append(checksums, k)
 		}
 

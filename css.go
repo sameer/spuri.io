@@ -1,9 +1,9 @@
 package main
 
 import (
-	"net/http"
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
 // Keep the file in-memory because it's only several KB & lowers load time.

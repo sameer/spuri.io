@@ -1,8 +1,8 @@
 package main
 
 import (
-	"net/http"
 	"html/template"
+	"net/http"
 )
 
 var templates = make(map[string]*template.Template)
@@ -11,7 +11,7 @@ var templates = make(map[string]*template.Template)
 // used does not matter.
 func compileTemplate(tmpls ...string) {
 	tmpl := tmpls[0]
-	for i, _ := range tmpls {
+	for i := range tmpls {
 		tmpls[i] = templateDir + tmpls[i] + templateExtension
 	}
 	templates[tmpl] = template.Must(template.ParseFiles(tmpls...))
