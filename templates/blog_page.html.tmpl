@@ -4,6 +4,6 @@
 {{ end }}
 {{ define "content" }}
 	<h2>{{ .Page.Title }}</h2>
-	<h3> By {{ .Page.Author }}, Last modified {{ (.Page.Modified.Format "Jan _2 2006 15:04 MST") }}</h3>
+	<h3> By {{ .Page.Author }}, Last modified {{ (.Page.Modified.Format "Mon Jan _2 2006 15:04 MST") }}</h3>
 	{{ .Page.Content }}
 {{ end }}

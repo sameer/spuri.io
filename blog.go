@@ -11,6 +11,7 @@ import (
 	"hash/crc32"
 	"github.com/sameer/unsafe-markdown"
 	"strings"
+	"html/template"
 )
 
 const (
@@ -24,7 +25,7 @@ type BlogPage struct {
 	Checksum uint32
 	Modified time.Time
 	Author   string
-	Content  string
+	Content  template.HTML
 }
 
 type BlogContext struct {
@@ -81,7 +82,7 @@ func (this *BlogContext) Refresh() {
 					Checksum: checksum,
 					Modified: info.ModTime(),
 					Author:   author,
-					Content:  markdown.MarkdownToHtmlString(string(bytes)),
+					Content:  template.HTML(markdown.MarkdownToHtmlString(string(bytes))),
 				}
 			}
 			return err
