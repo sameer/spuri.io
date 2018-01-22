@@ -9,5 +9,5 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	renderTemplate(w, "index", globalContext)
+	renderTemplate(w, "index", globalCtx)
 }

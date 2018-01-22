@@ -28,8 +28,8 @@ type BlogPage struct {
 	Content  template.HTML
 }
 
-type BlogContext struct {
-	*GlobalContext
+type blogContext struct {
+	*globalContext
 	Index      []*BlogPage
 	Page       *BlogPage
 	pages      map[uint32]*BlogPage
@@ -38,7 +38,7 @@ type BlogContext struct {
 }
 
 func blogHandler() http.HandlerFunc {
-	blogContext := &BlogContext{}
+	blogContext := &blogContext{}
 	blogServeIndex := func(w http.ResponseWriter, r *http.Request) {
 		renderTemplate(w, "blog_index", blogContext)
 	}
@@ -58,7 +58,7 @@ func blogHandler() http.HandlerFunc {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		globalSetHeaders(w, r)
-		blogContext.Refresh()
+		blogContext.refresh()
 		if len(r.URL.Path) == 0 { // Request for index
 			blogServeIndex(w, r)
 		} else { // Req for page, need to do handling of this
@@ -67,7 +67,7 @@ func blogHandler() http.HandlerFunc {
 	}
 }
 
-func (this *BlogContext) Refresh() {
+func (this *blogContext) refresh() {
 	if time.Now().After(this.NextUpdate) {
 		pages := make(map[uint32]*BlogPage)
 		filepath.Walk(blogDir, func(path string, info os.FileInfo, err error) error {
@@ -104,11 +104,11 @@ func (this *BlogContext) Refresh() {
 			}
 		}
 
-		this.GlobalContext = globalContext
+		this.globalContext = globalCtx
 		this.pages = pages
 		this.checksums = checksums
 		this.Index = Index
 		this.NextUpdate = time.Now().Add(blogCacheTime)
 	}
-	this.GlobalContext.Refresh()
+	this.globalContext.refresh()
 }

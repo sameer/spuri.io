@@ -10,7 +10,7 @@ const (
 	globalContextCacheTime = time.Duration(5 * time.Minute)
 )
 
-type GlobalContext struct {
+type globalContext struct {
 	NavItems   []NavItem
 	NextUpdate time.Time
 }
@@ -21,15 +21,15 @@ type NavItem struct {
 	NewPage bool
 }
 
-var globalContext *GlobalContext = nil
+var globalCtx *globalContext = nil
 
-func (this *GlobalContext) Refresh() {
+func (this *globalContext) refresh() {
 	if this == nil {
-		this = &GlobalContext{}
-		globalContext = this
+		this = &globalContext{}
+		globalCtx = this
 	}
-	if time.Now().After(globalContext.NextUpdate) {
-		*this = GlobalContext{NavItems: []NavItem{
+	if time.Now().After(globalCtx.NextUpdate) {
+		*this = globalContext{NavItems: []NavItem{
 			{"c0dart", "/c0dart/", false},
 			{"Blog", "/blog/", false},
 			{"Github", "https://github.com/sameer", false},

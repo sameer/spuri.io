@@ -29,7 +29,7 @@ const (
 func main() {
 	fmt.Println("Launching...")
 	compileTemplates()
-	globalContext.Refresh()
+	globalCtx.refresh()
 	bindHandlers()
 	fmt.Println("Ready!")
 

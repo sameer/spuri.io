@@ -14,13 +14,13 @@ import (
 	"unicode"
 )
 
-type C0dartContext struct {
-	*GlobalContext
-	Images     []C0dartImage
+type c0dartContext struct {
+	*globalContext
+	Images     []c0dartImage
 	NextUpdate time.Time
 }
 
-type C0dartImage struct {
+type c0dartImage struct {
 	Filename string
 	Href     string
 	Src      string
@@ -36,11 +36,11 @@ const (
 )
 
 func c0dartHandler() http.HandlerFunc {
-	c0dartContext := &C0dartContext{}
+	c0dartContext := &c0dartContext{}
 	var resizerImages = make(map[string]bytes.Buffer)
 	return func(w http.ResponseWriter, r *http.Request) {
 		globalSetHeaders(w, r)
-		c0dartContext.Refresh()
+		c0dartContext.refresh()
 		if r.URL.Path == "" { // Gallery
 			renderTemplate(w, "c0dart_gallery", c0dartContext)
 			return
@@ -93,7 +93,7 @@ func c0dartHandler() http.HandlerFunc {
 	}
 }
 
-func (this *C0dartContext) Refresh() {
+func (this *c0dartContext) refresh() {
 	fileNameToTitle := func(fileName string) string {
 		var outstring = ""
 		for _, r := range fileName {
@@ -108,11 +108,11 @@ func (this *C0dartContext) Refresh() {
 		return outstring
 	}
 	if time.Now().After(this.NextUpdate) {
-		var c0dartImages []C0dartImage = nil
+		var c0dartImages []c0dartImage = nil
 		if images, err := ioutil.ReadDir(c0dartDir); err == nil {
-			c0dartImages = make([]C0dartImage, len(images))
+			c0dartImages = make([]c0dartImage, len(images))
 			for i, img := range images {
-				c0dartImages[i] = C0dartImage{
+				c0dartImages[i] = c0dartImage{
 					Filename: img.Name(),
 					Href:     staticHandlerPath + "c0dart/" + img.Name(),
 					Src:      fmt.Sprintf(c0dartHandlerPath+resizerPath+"\""+img.Name()+"\"/%d/%d", galleryWidth, galleryHeight),
@@ -123,11 +123,11 @@ func (this *C0dartContext) Refresh() {
 		} else {
 			fmt.Printf("Error reading c0dart directory: %v\n", err)
 		}
-		*this = C0dartContext{
-			GlobalContext: globalContext,
+		*this = c0dartContext{
+			globalContext: globalCtx,
 			Images:        c0dartImages,
 			NextUpdate:    time.Now().Add(c0dartCacheTime),
 		}
 	}
-	this.GlobalContext.Refresh()
+	this.globalContext.refresh()
 }
