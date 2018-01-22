@@ -3,6 +3,10 @@
 * {
     font-family: 'Merriweather Sans', Arial, sans-serif;
 }
+blockquote, details {
+    border: 1px solid silver;
+    padding: 10px;
+}
 img {
     max-width: 100%;
     max-height: 100%;
@@ -11,14 +15,15 @@ img.ico {
     height: 1ex;
 }
 h1,h2 {
-    border-bottom: 1px solid #eaecef;
+    border-bottom: 1px solid silver;
 }
 /* Copyright 2014 Owen Versteeg; MIT licensed */
 body,textarea,input,select{
     background:0;
     border-radius:0;
     font:16px sans-serif;
-    margin:0
+    margin:0;
+    line-height: 1.5;
 }
 .smooth{
     transition:all .2s
