@@ -17,7 +17,7 @@ import (
 const (
 	blogCacheTime = time.Duration(5 * time.Minute)
 	blogIndexMax  = 10
-	author        = "Sameer Puri"
+	blogAuthor    = "Sameer Puri"
 )
 
 type BlogPage struct {
@@ -37,38 +37,39 @@ type blogContext struct {
 	NextUpdate time.Time
 }
 
-func blogHandler() http.HandlerFunc {
-	blogContext := &blogContext{}
-	blogServeIndex := func(w http.ResponseWriter, r *http.Request) {
-		renderTemplate(w, "blog_index", blogContext)
-	}
-	blogServePage := func(w http.ResponseWriter, r *http.Request) {
-		var crcUint uint32
-		_, err := fmt.Sscanf(r.URL.Path, "%d", &crcUint)
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		} else if page, ok := blogContext.pages[uint32(crcUint)]; !ok {
-			http.NotFound(w, r)
-			return
-		} else {
-			blogContext.Page = page
-			renderTemplate(w, "blog_page", blogContext)
-		}
-	}
-	return func(w http.ResponseWriter, r *http.Request) {
-		globalSetHeaders(w, r)
-		blogContext.refresh()
-		if len(r.URL.Path) == 0 { // Request for index
-			blogServeIndex(w, r)
-		} else { // Req for page, need to do handling of this
-			blogServePage(w, r)
-		}
+func (ctx *blogContext) serveIndex(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, "blog_index", ctx)
+}
+
+func (ctx *blogContext) servePage(w http.ResponseWriter, r *http.Request) {
+	var crcUint uint32
+	if _, err := fmt.Sscanf(r.URL.Path, "%d", &crcUint); err != nil {
+		http.NotFound(w, r)
+	} else if page, ok := ctx.pages[uint32(crcUint)]; !ok {
+		http.NotFound(w, r)
+	} else {
+		ctx.Page = page
+		renderTemplate(w, "blog_page", ctx)
+		ctx.Page = nil
 	}
 }
 
-func (this *blogContext) refresh() {
-	if time.Now().After(this.NextUpdate) {
+var blogHandler = func() http.HandlerFunc {
+	ctx := &blogContext{}
+	return func(w http.ResponseWriter, r *http.Request) {
+		globalSetHeaders(w, r)
+		ctx.refresh()
+		if len(r.URL.Path) == 0 { // Request for index
+			ctx.serveIndex(w, r)
+		} else { // Req for page, need to do handling of this
+			ctx.servePage(w, r)
+		}
+	}
+}()
+
+func (ctx *blogContext) refresh() {
+	ctx.globalContext.refresh()
+	if time.Now().After(ctx.NextUpdate) {
 		pages := make(map[uint32]*BlogPage)
 		filepath.Walk(blogDir, func(path string, info os.FileInfo, err error) error {
 			if err == nil && !info.IsDir() {
@@ -81,7 +82,7 @@ func (this *blogContext) refresh() {
 					Title:    strings.TrimSuffix(info.Name(), filepath.Ext(info.Name())),
 					Checksum: checksum,
 					Modified: info.ModTime(),
-					Author:   author,
+					Author:   blogAuthor,
 					Content:  template.HTML(markdown.MarkdownToHtmlString(string(bytes))),
 				}
 			}
@@ -104,11 +105,10 @@ func (this *blogContext) refresh() {
 			}
 		}
 
-		this.globalContext = globalCtx
-		this.pages = pages
-		this.checksums = checksums
-		this.Index = Index
-		this.NextUpdate = time.Now().Add(blogCacheTime)
+		ctx.globalContext = globalCtx
+		ctx.pages = pages
+		ctx.checksums = checksums
+		ctx.Index = Index
+		ctx.NextUpdate = time.Now().Add(blogCacheTime)
 	}
-	this.globalContext.refresh()
 }

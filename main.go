@@ -44,11 +44,11 @@ func main() {
 }
 
 func bindHandlers() {
-	http.Handle("/static/", http.StripPrefix(staticHandlerPath, staticHandler()))
+	http.Handle("/static/", http.StripPrefix(staticHandlerPath, staticHandler))
 	http.HandleFunc(cssHandlerPath, cssHandler)
 	http.HandleFunc(indexHandlerPath, indexHandler)
-	http.Handle(blogHandlerPath, http.StripPrefix(blogHandlerPath, blogHandler()))
-	http.Handle(c0dartHandlerPath, http.StripPrefix(c0dartHandlerPath, c0dartHandler()))
+	http.Handle(blogHandlerPath, http.StripPrefix(blogHandlerPath, blogHandler))
+	http.Handle(c0dartHandlerPath, http.StripPrefix(c0dartHandlerPath, c0dartHandler))
 	http.HandleFunc(aboutHandlerPath, aboutHandler)
 }
 

@@ -7,7 +7,7 @@ import (
 
 var templates = make(map[string]*template.Template)
 
-// Compiles a template. The first string must be the "leaf" template of the tree, the order of the remaining templates
+// Compiles a template. The first template must be the "leaf" template of the tree, the order of the remaining templates
 // used does not matter.
 func compileTemplate(tmpls ...string) {
 	tmpl := tmpls[0]
