@@ -70,6 +70,8 @@ func (ctx *c0dartContext) doResize(fileName string) error {
 		return err
 	} else if os.IsPermission(err) {
 		fmt.Println("C0dart resizer doesn't have permissions for file", fileName, "with error", err)
+	} else if _, ok := ctx.ResizerImages.Load(fileName); ok {
+		return nil
 	}
 	file, err := os.Open(c0dartDir + fileName)
 	if err != nil {
