@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 	"unicode"
+	"math/rand"
 )
 
 type c0dartContext struct {
@@ -133,19 +134,21 @@ func (this *c0dartContext) refresh() {
 		if images, err := ioutil.ReadDir(c0dartDir); err == nil {
 			c0dartImages = make([]c0dartImage, len(images))
 			resizeWaiter := sync.WaitGroup{}
-			for i, img := range images {
+
+			for i, j := range rand.New(rand.NewSource(time.Now().UnixNano())).Perm(len(images)) {
 				resizeWaiter.Add(1)
-				c0dartImages[i] = c0dartImage{
-					Filename: img.Name(),
-					Href:     staticHandlerPath + "c0dart/" + img.Name(),
-					Src:      fmt.Sprintf(c0dartHandlerPath+resizerPath+"\""+img.Name()+"\"/%d/%d", galleryWidth, galleryHeight),
-					Title:    fileNameToTitle(img.Name()),
+				imageName := images[i].Name()
+				c0dartImages[j] = c0dartImage{
+					Filename: imageName,
+					Href:     staticHandlerPath + "c0dart/" + imageName ,
+					Src:      fmt.Sprintf(c0dartHandlerPath+resizerPath+"\""+imageName+"\"/%d/%d", galleryWidth, galleryHeight),
+					Title:    fileNameToTitle(imageName),
 					Desc:     "", // TODO: make these fields real
 				}
 				go func(name string) {
 					defer resizeWaiter.Done()
 					this.doResize(name)
-				}(img.Name())
+				}(imageName)
 			}
 			resizeWaiter.Wait()
 		} else {
