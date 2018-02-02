@@ -32,8 +32,9 @@ type c0dartImage struct {
 
 const (
 	resizerPath     = "resizer/"
-	galleryWidth    = 1920 / 2 // Reduction of transfer bandwidth
-	galleryHeight   = 1080 / 2
+	resizeFactor = 2
+	galleryWidth    = 1920 / resizeFactor // Reduction of transfer bandwidth
+	galleryHeight   = 1080 / resizeFactor
 	c0dartCacheTime = time.Duration(1 * time.Hour)
 )
 

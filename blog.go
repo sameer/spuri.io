@@ -72,7 +72,7 @@ func (ctx *blogContext) refresh() {
 	if time.Now().After(ctx.NextUpdate) {
 		pages := make(map[uint32]*BlogPage)
 		filepath.Walk(blogDir, func(path string, info os.FileInfo, err error) error {
-			if err == nil && !info.IsDir() {
+			if err == nil && !info.IsDir() && strings.HasSuffix(info.Name(), "md") {
 				bytes, err := ioutil.ReadFile(path)
 				if err != nil {
 					return err

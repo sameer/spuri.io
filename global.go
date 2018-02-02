@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	globalContextCacheTime = time.Duration(5 * time.Minute)
+	globalContextCacheTime = time.Duration(time.Hour * 24 * 360) // Never refresh, it's essentially static
 )
 
 type globalContext struct {
