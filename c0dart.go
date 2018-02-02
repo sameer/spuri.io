@@ -21,6 +21,7 @@ type c0dartContext struct {
 	Images        []c0dartImage
 	ResizerImages sync.Map
 	NextUpdate    time.Time
+	UpdateMutex sync.Mutex
 }
 
 type c0dartImage struct {
@@ -129,9 +130,11 @@ func fileNameToTitle(fileName string) string {
 	return outstring
 }
 
-func (this *c0dartContext) refresh() {
-	this.globalContext.refresh()
-	if time.Now().After(this.NextUpdate) {
+func (ctx *c0dartContext) refresh() {
+	ctx.UpdateMutex.Lock()
+	defer ctx.UpdateMutex.Unlock()
+	ctx.globalContext.refresh()
+	if time.Now().After(ctx.NextUpdate) {
 		var c0dartImages []c0dartImage = nil
 		if images, err := ioutil.ReadDir(c0dartDir); err == nil {
 			c0dartImages = make([]c0dartImage, len(images))
@@ -149,7 +152,7 @@ func (this *c0dartContext) refresh() {
 				}
 				go func(name string) {
 					defer resizeWaiter.Done()
-					this.doResize(name)
+					ctx.doResize(name)
 				}(imageName)
 			}
 			resizeWaiter.Wait()
@@ -157,6 +160,6 @@ func (this *c0dartContext) refresh() {
 		} else {
 			fmt.Printf("Error reading c0dart directory: %v\n", err)
 		}
-		this.globalContext, this.Images, this.NextUpdate = globalCtx, c0dartImages, time.Now().Add(c0dartCacheTime)
+		ctx.globalContext, ctx.Images, ctx.NextUpdate = globalCtx, c0dartImages, time.Now().Add(c0dartCacheTime)
 	}
 }

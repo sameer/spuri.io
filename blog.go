@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"sync"
 )
 
 const (
@@ -35,6 +36,7 @@ type blogContext struct {
 	pages      map[uint32]*BlogPage
 	checksums  []uint32
 	NextUpdate time.Time
+	UpdateMutex sync.Mutex
 }
 
 func (ctx *blogContext) serveIndex(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +70,8 @@ var blogHandler = func() http.HandlerFunc {
 }()
 
 func (ctx *blogContext) refresh() {
+	ctx.UpdateMutex.Lock()
+	defer ctx.UpdateMutex.Unlock()
 	ctx.globalContext.refresh()
 	if time.Now().After(ctx.NextUpdate) {
 		pages := make(map[uint32]*BlogPage)

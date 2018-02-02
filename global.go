@@ -24,6 +24,8 @@ type NavItem struct {
 var globalCtx *globalContext = nil
 
 func (this *globalContext) refresh() {
+	// This doesn't need to be synchronized because it will always basically do nothing. Multiple updates happening at
+	// the same time won't really do anything.
 	if this == nil {
 		this = &globalContext{}
 		globalCtx = this
