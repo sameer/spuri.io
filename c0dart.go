@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode"
 	"math/rand"
+	"runtime"
 )
 
 type c0dartContext struct {
@@ -152,6 +153,7 @@ func (this *c0dartContext) refresh() {
 				}(imageName)
 			}
 			resizeWaiter.Wait()
+			runtime.GC() // Force gc to collect image processing garbage
 		} else {
 			fmt.Printf("Error reading c0dart directory: %v\n", err)
 		}
