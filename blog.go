@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 	"sync"
+	"time"
 )
 
 const (
@@ -31,11 +31,11 @@ type BlogPage struct {
 
 type blogContext struct {
 	*globalContext
-	Index      []*BlogPage
-	Page       *BlogPage
-	pages      map[uint32]*BlogPage
-	checksums  []uint32
-	NextUpdate time.Time
+	Index       []*BlogPage
+	Page        *BlogPage
+	pages       map[uint32]*BlogPage
+	checksums   []uint32
+	NextUpdate  time.Time
 	UpdateMutex sync.Mutex
 }
 

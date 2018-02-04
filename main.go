@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	staticHandlerPath = "/static/"
-	cssHandlerPath    = "/style.css"
-	blogHandlerPath   = "/blog/"
-	c0dartHandlerPath = "/c0dart/"
-	aboutHandlerPath  = "/about"
+	staticHandlerPath           = "/static/"
+	cssHandlerPath              = "/style.css"
+	blogHandlerPath             = "/blog/"
+	c0dartHandlerPath           = "/c0dart/"
+	aboutHandlerPath            = "/about"
 	studioStatisticsHandlerPath = "/studio-statistics.png"
-	indexHandlerPath  = "/"
+	indexHandlerPath            = "/"
 
 	staticDir         = "./static/"
 	cssFilePath       = staticDir + "style.css"

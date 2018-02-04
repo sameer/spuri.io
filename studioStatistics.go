@@ -1,10 +1,10 @@
 package main
 
 import (
-	"net/http"
-	"strconv"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"strconv"
 )
 
 var studioStatisticsHandler = func() func(w http.ResponseWriter, r *http.Request) {

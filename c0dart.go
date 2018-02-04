@@ -3,17 +3,19 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/esimov/caire"
+	"github.com/disintegration/imaging"
+	"image"
+	"image/png"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"unicode"
-	"math/rand"
-	"runtime"
 )
 
 type c0dartContext struct {
@@ -21,7 +23,7 @@ type c0dartContext struct {
 	Images        []c0dartImage
 	ResizerImages sync.Map
 	NextUpdate    time.Time
-	UpdateMutex sync.Mutex
+	UpdateMutex   sync.Mutex
 }
 
 type c0dartImage struct {
@@ -34,7 +36,7 @@ type c0dartImage struct {
 
 const (
 	resizerPath     = "resizer/"
-	resizeFactor = 2
+	resizeFactor    = 2
 	galleryWidth    = 1920 / resizeFactor // Reduction of transfer bandwidth
 	galleryHeight   = 1080 / resizeFactor
 	c0dartCacheTime = time.Duration(1 * time.Hour)
@@ -82,21 +84,15 @@ func (ctx *c0dartContext) doResize(fileName string) error {
 		fmt.Println("Failed to open image: ", err)
 		return err
 	}
-	var imgBuf bytes.Buffer
-	processor := &caire.Processor{
-		BlurRadius:     1,
-		SobelThreshold: 10,
-		NewWidth:       galleryWidth,
-		NewHeight:      galleryHeight,
-		Percentage:     false,
-		Debug:          false,
-	}
-	err = processor.Process(file, &imgBuf)
+	img, _, err := image.Decode(file)
 	if err != nil {
-		fmt.Println("Failed to resize image")
+		fmt.Println("Failed to decode image:", err)
 		return err
 	}
-	ctx.ResizerImages.Store(fileName, imgBuf.Bytes())
+	var bufout bytes.Buffer
+	resizedImage := imaging.Resize(img, galleryWidth, galleryHeight, imaging.Lanczos)
+	png.Encode(&bufout, resizedImage)
+	ctx.ResizerImages.Store(fileName, bufout.Bytes())
 	return nil
 }
 
@@ -145,7 +141,7 @@ func (ctx *c0dartContext) refresh() {
 				imageName := images[i].Name()
 				c0dartImages[j] = c0dartImage{
 					Filename: imageName,
-					Href:     staticHandlerPath + "c0dart/" + imageName ,
+					Href:     staticHandlerPath + "c0dart/" + imageName,
 					Src:      fmt.Sprintf(c0dartHandlerPath+resizerPath+"\""+imageName+"\"/%d/%d", galleryWidth, galleryHeight),
 					Title:    fileNameToTitle(imageName),
 					Desc:     "", // TODO: make these fields real
