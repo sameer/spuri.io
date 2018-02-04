@@ -86,8 +86,8 @@ func (ctx *c0dartContext) doResize(fileName string) error {
 	processor := &caire.Processor{
 		BlurRadius:     1,
 		SobelThreshold: 10,
-		NewWidth:       0,
-		NewHeight:      0,
+		NewWidth:       galleryWidth,
+		NewHeight:      galleryHeight,
 		Percentage:     false,
 		Debug:          false,
 	}
