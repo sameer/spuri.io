@@ -9,10 +9,11 @@ import (
 const (
 	staticHandlerPath = "/static/"
 	cssHandlerPath    = "/style.css"
-	indexHandlerPath  = "/"
 	blogHandlerPath   = "/blog/"
 	c0dartHandlerPath = "/c0dart/"
 	aboutHandlerPath  = "/about"
+	studioStatisticsHandlerPath = "/studio-statistics.png"
+	indexHandlerPath  = "/"
 
 	staticDir         = "./static/"
 	cssFilePath       = staticDir + "style.css"
@@ -46,10 +47,11 @@ func main() {
 func bindHandlers() {
 	http.Handle("/static/", http.StripPrefix(staticHandlerPath, staticHandler))
 	http.HandleFunc(cssHandlerPath, cssHandler)
-	http.HandleFunc(indexHandlerPath, indexHandler)
 	http.Handle(blogHandlerPath, http.StripPrefix(blogHandlerPath, blogHandler))
 	http.Handle(c0dartHandlerPath, http.StripPrefix(c0dartHandlerPath, c0dartHandler))
 	http.HandleFunc(aboutHandlerPath, aboutHandler)
+	http.HandleFunc(studioStatisticsHandlerPath, studioStatisticsHandler)
+	http.HandleFunc(indexHandlerPath, indexHandler)
 }
 
 func compileTemplates() {
