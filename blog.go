@@ -31,7 +31,7 @@ type BlogPage struct {
 
 type blogContext struct {
 	*globalContext
-	Index       []*BlogPage
+	Index       [blogIndexMax]*BlogPage
 	Page        *BlogPage
 	pages       map[uint32]*BlogPage
 	checksums   []uint32
@@ -98,9 +98,9 @@ func (ctx *blogContext) refresh() {
 		}
 
 		sort.Slice(checksums, func(i, j int) bool { return pages[checksums[i]].Modified.After(pages[checksums[j]].Modified) })
-		Index := make([]*BlogPage, 0, blogIndexMax)
-		for _, checksum := range checksums {
-			Index = append(Index, pages[checksum])
+		var Index [blogIndexMax]*BlogPage
+		for i, checksum := range checksums {
+			Index[i] = pages[checksum]
 			if len(Index) == blogIndexMax {
 				break
 			}
