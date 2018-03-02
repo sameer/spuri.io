@@ -2,7 +2,6 @@ package main
 
 import "net/http"
 
-func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	globalSetHeaders(w, r)
-	renderTemplate(w, "about", globalCtx)
+var aboutHandler http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, "about", globalCtx.Load())
 }

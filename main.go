@@ -24,18 +24,22 @@ const (
 
 	prodBindAddress        = "[0:0:0:0:0:0:0:0]:80"
 	devBindAddress         = "127.0.0.1:8000"
-	devEnvironmentVariable = "DEV=1"
+	devEnvironmentVariable = "DEV"
+	prodIpEnvironmentVariable = "PROD_IP"
 )
 
 func main() {
 	fmt.Println("Launching...")
 	compileTemplates()
-	globalCtx.refresh()
+	globalCtx.Store(&globalContext{})
+	globalCtx.Load().(*globalContext).refresh()
 	bindHandlers()
 	fmt.Println("Ready!")
 
 	bindAddress := prodBindAddress
-	if contains(os.Environ(), devEnvironmentVariable) {
+	if ip := os.Getenv(prodIpEnvironmentVariable); ip != "" {
+		bindAddress = ip
+	} else if os.Getenv(devEnvironmentVariable) != "" {
 		bindAddress = devBindAddress
 	}
 	err := http.ListenAndServe(bindAddress, nil)
@@ -44,14 +48,21 @@ func main() {
 	}
 }
 
+func bindHandler(path string, handler http.Handler) {
+	http.Handle(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		globalSetHeaders(w, r)
+		handler.ServeHTTP(w, r)
+	}))
+}
+
 func bindHandlers() {
-	http.Handle("/static/", http.StripPrefix(staticHandlerPath, staticHandler))
-	http.HandleFunc(cssHandlerPath, cssHandler)
-	http.Handle(blogHandlerPath, http.StripPrefix(blogHandlerPath, blogHandler))
-	http.Handle(c0dartHandlerPath, http.StripPrefix(c0dartHandlerPath, c0dartHandler))
-	http.HandleFunc(aboutHandlerPath, aboutHandler)
-	http.HandleFunc(studioStatisticsHandlerPath, studioStatisticsHandler)
-	http.HandleFunc(indexHandlerPath, indexHandler)
+	bindHandler(staticHandlerPath, http.StripPrefix(staticHandlerPath, staticHandler))
+	bindHandler(cssHandlerPath, cssHandler)
+	bindHandler(blogHandlerPath, http.StripPrefix(blogHandlerPath, blogHandler))
+	bindHandler(c0dartHandlerPath, http.StripPrefix(c0dartHandlerPath, c0dartHandler))
+	bindHandler(aboutHandlerPath, aboutHandler)
+	bindHandler(studioStatisticsHandlerPath, studioStatisticsHandler)
+	bindHandler(indexHandlerPath, indexHandler)
 }
 
 func compileTemplates() {

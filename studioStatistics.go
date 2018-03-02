@@ -5,23 +5,28 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"crypto/subtle"
+	"os"
+	"sync/atomic"
 )
 
-var studioStatisticsHandler = func() func(w http.ResponseWriter, r *http.Request) {
-	var studioStatisticsImage []byte
+var studioStatisticsHandler http.HandlerFunc = func() func(w http.ResponseWriter, r *http.Request) {
+	const apiKeyHeader = "x-api-key"
+	var atomicStatsImage atomic.Value
+	atomicStatsImage.Store([]byte{})
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			if r.Header.Get("x-api-key") != "" && r.Header.Get("content-type") == "image/png" {
+			if apiKey := r.Header.Get(apiKeyHeader); apiKey != "" && r.Header.Get("content-type") == "image/png" && subtle.ConstantTimeCompare([]byte(apiKey), []byte(os.Getenv("x_api_key"))) == 1 {
 				img, err := ioutil.ReadAll(r.Body)
 				if err != nil {
-					studioStatisticsImage = img
+					atomicStatsImage.Store(img)
 				}
 			}
 		} else if r.Method == http.MethodGet {
-			globalSetHeaders(w, r)
-			w.Header().Add("Content-Length", strconv.Itoa(len(studioStatisticsImage)))
+			img := atomicStatsImage.Load().([]byte)
+			w.Header().Add("Content-Length", strconv.Itoa(len(img)))
 			w.Header().Add("Cache-Control", fmt.Sprintf("private, max-age=%d", 60))
-			w.Write(studioStatisticsImage)
+			w.Write(img)
 		}
 	}
 }()

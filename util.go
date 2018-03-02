@@ -25,12 +25,3 @@ func renderTemplate(w http.ResponseWriter, tmpl string, ctx interface{}) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
-
-func contains(stringSlice []string, searchString string) bool {
-	for _, str := range stringSlice {
-		if str == searchString {
-			return true
-		}
-	}
-	return false
-}

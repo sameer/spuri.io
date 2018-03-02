@@ -10,20 +10,21 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"unicode"
+	"strconv"
+	"log"
 )
 
 type c0dartContext struct {
 	*globalContext
-	Images        []c0dartImage
-	ResizerImages sync.Map
-	NextUpdate    time.Time
-	UpdateMutex   sync.Mutex
+	Images      sync.Map
+	ImageSlice  []c0dartImage
+	NextUpdate  time.Time
+	UpdateMutex sync.RWMutex
+	logger      *log.Logger
 }
 
 type c0dartImage struct {
@@ -32,6 +33,7 @@ type c0dartImage struct {
 	Src      string
 	Title    string
 	Desc     string
+	Data     []byte
 }
 
 const (
@@ -46,65 +48,66 @@ func (ctx *c0dartContext) serveResizer(w http.ResponseWriter, r *http.Request) {
 	var fileName string
 	var width, height int
 
-	_, err := fmt.Sscanf(r.URL.Path, "resizer/%q/%d/%d", &fileName, &width, &height)
-	if err != nil {
+	if _, err := fmt.Sscanf(r.URL.Path, "resizer/%q/%d/%d", &fileName, &width, &height); err != nil {
 		http.NotFound(w, r)
-		return
-	}
-	for _, c0dartImage := range ctx.Images {
-		if c0dartImage.Filename == fileName && width == galleryWidth && height == galleryHeight {
-			resizedImageReader, ok := ctx.ResizerImages.Load(fileName)
-			if !ok {
-				fmt.Println("Found unresized image", c0dartImage.Filename, "in", ctx.ResizerImages)
-				break
-			} else if resizedImageReader == nil {
-				fmt.Println("Found errored resize image", c0dartImage.Filename)
-				break
-			}
-			w.Header().Add("Content-Length", strconv.Itoa(len(resizedImageReader.([]byte))))
+	} else if width != galleryWidth || height != galleryHeight {
+		http.NotFound(w, r)
+	} else {
+		value, ok := ctx.Images.Load(fileName)
+		if !ok {
+			ctx.logger.Println("didn't find", value)
+			http.NotFound(w, r)
+		} else if value.(*c0dartImage).Data == nil {
+			ctx.logger.Println("request for", value, "but was not resized")
+			http.NotFound(w, r)
+		} else {
+			imgInfo := value.(*c0dartImage)
+			w.Header().Add("Content-Length", strconv.Itoa(len(imgInfo.Data)))
 			w.Header().Add("Cache-Control", fmt.Sprintf("private, max-age=%d", int(c0dartCacheTime.Seconds())))
-			w.Write(resizedImageReader.([]byte))
-			return
+			w.Write(imgInfo.Data)
 		}
 	}
-	http.NotFound(w, r)
 }
 
-func (ctx *c0dartContext) doResize(fileName string) error {
-	if _, err := os.Stat(c0dartDir + fileName); os.IsNotExist(err) {
-		fmt.Println("C0dart resizer didn't find file", fileName, "with error", err)
+func (ctx *c0dartContext) doResize(imgInfo *c0dartImage) error {
+	imgFileName := imgInfo.Filename
+	defer ctx.Images.Store(imgFileName, imgInfo)
+	imgFilePath := c0dartDir + imgFileName
+	if _, err := os.Stat(imgFilePath); os.IsNotExist(err) {
+		ctx.logger.Println("couldn't find file", imgFileName, ":", err)
 		return err
 	} else if os.IsPermission(err) {
-		fmt.Println("C0dart resizer doesn't have permissions for file", fileName, "with error", err)
-	} else if _, ok := ctx.ResizerImages.Load(fileName); ok {
+		ctx.logger.Println("don't have permissions for file", imgFileName, ":", err)
+	} else if _, ok := ctx.Images.Load(imgFileName); ok {
 		return nil
 	}
-	file, err := os.Open(c0dartDir + fileName)
+	imgFile, err := os.Open(imgFilePath)
 	if err != nil {
-		fmt.Println("Failed to open image: ", err)
+		ctx.logger.Println("failed to open image", err)
 		return err
 	}
-	img, _, err := image.Decode(file)
+	decodedImgFile, _, err := image.Decode(imgFile)
 	if err != nil {
-		fmt.Println("Failed to decode image:", err)
+		ctx.logger.Println("failed to decode image", err)
 		return err
 	}
 	var bufout bytes.Buffer
-	resizedImage := imaging.Resize(img, galleryWidth, galleryHeight, imaging.Lanczos)
+	resizedImage := imaging.Resize(decodedImgFile, galleryWidth, galleryHeight, imaging.Lanczos)
 	png.Encode(&bufout, resizedImage)
-	ctx.ResizerImages.Store(fileName, bufout.Bytes())
+	imgInfo.Data = bufout.Bytes()
 	return nil
 }
 
 var c0dartHandler = func() http.HandlerFunc {
-	c0dartContext := &c0dartContext{}
+	c0dartContext := &c0dartContext{logger: log.New(os.Stdout, "C0dart ", log.LstdFlags)}
 	return func(w http.ResponseWriter, r *http.Request) {
-		globalSetHeaders(w, r)
 		c0dartContext.refresh()
+		c0dartContext.UpdateMutex.RLock()
+		defer c0dartContext.UpdateMutex.RUnlock()
 		if r.URL.Path == "" { // Gallery
 			renderTemplate(w, "c0dart_gallery", c0dartContext)
 			return
-		} else if strings.HasPrefix(r.URL.Path, resizerPath) && strings.Count(r.URL.Path, "/") == 3 { // Resizer
+		} else if strings.Count(r.URL.Path, "/") == 3 && strings.HasPrefix(r.URL.Path, resizerPath) { // Resizer
 			c0dartContext.serveResizer(w, r)
 		} else {
 			http.NotFound(w, r)
@@ -129,33 +132,37 @@ func fileNameToTitle(fileName string) string {
 func (ctx *c0dartContext) refresh() {
 	ctx.UpdateMutex.Lock()
 	defer ctx.UpdateMutex.Unlock()
-	ctx.globalContext.refresh()
+	globalCtx.Load().(context).refresh()
 	if time.Now().After(ctx.NextUpdate) {
-		var c0dartImages []c0dartImage = nil
 		if images, err := ioutil.ReadDir(c0dartDir); err == nil {
-			c0dartImages = make([]c0dartImage, len(images))
+			ctx.ImageSlice = make([]c0dartImage, len(images))
 			resizeWaiter := sync.WaitGroup{}
-
-			for i, j := range rand.New(rand.NewSource(time.Now().UnixNano())).Perm(len(images)) {
-				resizeWaiter.Add(1)
-				imageName := images[i].Name()
-				c0dartImages[j] = c0dartImage{
-					Filename: imageName,
-					Href:     staticHandlerPath + "c0dart/" + imageName,
-					Src:      fmt.Sprintf(c0dartHandlerPath+resizerPath+"\""+imageName+"\"/%d/%d", galleryWidth, galleryHeight),
-					Title:    fileNameToTitle(imageName),
-					Desc:     "", // TODO: make these fields real
+			for i := range rand.New(rand.NewSource(time.Now().UnixNano())).Perm(len(images)) {
+				if _, ok := ctx.Images.Load(images[i].Name()); !ok {
+					imageFileName := images[i].Name()
+					ctx.ImageSlice[i] = c0dartImage{
+						Filename: imageFileName,
+						Href:     staticHandlerPath + "c0dart/" + imageFileName,
+						Src:      fmt.Sprintf(c0dartHandlerPath+resizerPath+"\""+imageFileName+"\"/%d/%d", galleryWidth, galleryHeight),
+						Title:    fileNameToTitle(imageFileName),
+						Desc:     "", // TODO: make these fields real
+						Data:     nil,
+					}
+					resizeWaiter.Add(1)
+					go func(imgInfo *c0dartImage) {
+						defer resizeWaiter.Done()
+						if err := ctx.doResize(imgInfo); err != nil {
+							ctx.logger.Println("error in resizing", err)
+						}
+					}(&ctx.ImageSlice[i])
+					ctx.logger.Println("resizing", images[i].Name())
 				}
-				go func(name string) {
-					defer resizeWaiter.Done()
-					ctx.doResize(name)
-				}(imageName)
 			}
 			resizeWaiter.Wait()
-			runtime.GC() // Force gc to collect image processing garbage
 		} else {
-			fmt.Printf("Error reading c0dart directory: %v\n", err)
+			ctx.logger.Println("Error reading c0dart directory", err)
 		}
-		ctx.globalContext, ctx.Images, ctx.NextUpdate = globalCtx, c0dartImages, time.Now().Add(c0dartCacheTime)
+		ctx.globalContext, ctx.NextUpdate = globalCtx.Load().(*globalContext), time.Now().Add(c0dartCacheTime)
+		ctx.logger.Println("refreshed")
 	}
 }

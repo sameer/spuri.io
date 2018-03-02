@@ -36,7 +36,7 @@ type blogContext struct {
 	pages       map[uint32]*BlogPage
 	checksums   []uint32
 	NextUpdate  time.Time
-	UpdateMutex sync.Mutex
+	UpdateMutex sync.RWMutex
 }
 
 func (ctx *blogContext) serveIndex(w http.ResponseWriter, r *http.Request) {
@@ -59,8 +59,9 @@ func (ctx *blogContext) servePage(w http.ResponseWriter, r *http.Request) {
 var blogHandler = func() http.HandlerFunc {
 	ctx := &blogContext{}
 	return func(w http.ResponseWriter, r *http.Request) {
-		globalSetHeaders(w, r)
 		ctx.refresh()
+		ctx.UpdateMutex.RLock()
+		defer ctx.UpdateMutex.RUnlock()
 		if len(r.URL.Path) == 0 { // Request for index
 			ctx.serveIndex(w, r)
 		} else { // Req for page, need to do handling of this
@@ -70,14 +71,15 @@ var blogHandler = func() http.HandlerFunc {
 }()
 
 func (ctx *blogContext) refresh() {
-	ctx.UpdateMutex.Lock()
-	defer ctx.UpdateMutex.Unlock()
-	ctx.globalContext.refresh()
+	globalCtx.Load().(*globalContext).refresh()
 	if time.Now().After(ctx.NextUpdate) {
+		ctx.UpdateMutex.Lock()
+		defer ctx.UpdateMutex.Unlock()
 		pages := make(map[uint32]*BlogPage)
 		filepath.Walk(blogDir, func(path string, info os.FileInfo, err error) error {
 			if err == nil && !info.IsDir() && strings.HasSuffix(info.Name(), "md") {
 				bytes, err := ioutil.ReadFile(path)
+				fmt.Println("adding", path)
 				if err != nil {
 					return err
 				}
@@ -109,7 +111,7 @@ func (ctx *blogContext) refresh() {
 			}
 		}
 
-		ctx.globalContext = globalCtx
+		ctx.globalContext = globalCtx.Load().(*globalContext)
 		ctx.pages = pages
 		ctx.checksums = checksums
 		ctx.Index = Index

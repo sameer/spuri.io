@@ -4,11 +4,16 @@ import (
 	"net/http"
 	"runtime"
 	"time"
+	"sync/atomic"
 )
 
 const (
 	globalContextCacheTime = time.Duration(time.Hour * 24 * 360) // Never refresh, it's essentially static
 )
+
+type context interface {
+	refresh()
+}
 
 type globalContext struct {
 	NavItems   []NavItem
@@ -21,22 +26,17 @@ type NavItem struct {
 	NewPage bool
 }
 
-var globalCtx *globalContext = nil
+var globalCtx atomic.Value
 
 func (this *globalContext) refresh() {
-	// This doesn't need to be synchronized because it will always basically do nothing. Multiple updates happening at
-	// the same time won't really do anything.
-	if this == nil {
-		this = &globalContext{}
-		globalCtx = this
-	}
-	if time.Now().After(globalCtx.NextUpdate) {
-		*this = globalContext{NavItems: []NavItem{
-			{"c0dart", "/c0dart/", false},
-			{"Blog", "/blog/", false},
-			{"Github", "https://github.com/sameer", false},
-			{"About", "/about", false},
-		},
+	if time.Now().After(this.NextUpdate) {
+		*this = globalContext{
+			NavItems: []NavItem{
+				{"c0dart", "/c0dart/", false},
+				{"Blog", "/blog/", false},
+				{"Github", "https://github.com/sameer", false},
+				{"About", "/about", false},
+			},
 			NextUpdate: time.Now().Add(globalContextCacheTime),
 		}
 	}

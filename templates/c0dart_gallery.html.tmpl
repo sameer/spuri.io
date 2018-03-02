@@ -3,13 +3,13 @@
 {{ define "content" }} 
 {{ if .Images }}
 <h2>Gallery</h2>
-{{ range $img := .Images }}
-<a href="{{ $img.Href }}"><img src="{{ $img.Src }}" alt="{{ $img.Title }}"></a>
-<h3>{{ $img.Title }}</h3><br>
-<p>{{ $img.Desc }}</p>
+{{ range $imgInfo := .ImageSlice }}
+<a href="{{ $imgInfo.Href }}"><img src="{{ $imgInfo.Src }}" alt="{{ $imgInfo.Title }}"></a>
+<h3>{{ $imgInfo.Title }}</h3><br>
+<p>{{ $imgInfo.Desc }}</p>
 {{ end }}
 {{ end }}
-{{ if not .Images }}
+{{ if not .ImageSlice }}
 <h2>No art yet, check back later!</h2>
 {{ end }}
 {{ end }}

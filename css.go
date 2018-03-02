@@ -4,23 +4,33 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync/atomic"
+	"strconv"
+	"sync"
 )
 
-// Keep the file in-memory because it's only several KB & lowers load time.
+var cssHandler = func() http.HandlerFunc {
+	// Keep the file in-memory because it's only several KB & lowers load time.
+	var atomicCssFile atomic.Value
+	atomicCssFile.Store([]byte{})
+	var loadMutex sync.Mutex
+	const defaultCSS = "* { font-family: sans-serif; }"
 
-var cssFile []byte = nil
-
-func cssHandler(w http.ResponseWriter, r *http.Request) {
-	globalSetHeaders(w, r)
-	if cssFile == nil {
-		content, err := ioutil.ReadFile(cssFilePath)
-		if err != nil {
-			cssFile = []byte("* { font-family: sans-serif; }")
-			fmt.Printf("%v", err)
-		} else {
-			cssFile = content
+	return func(w http.ResponseWriter, r *http.Request) {
+		loadMutex.Lock()
+		cssFile := atomicCssFile.Load().([]byte)
+		if len(cssFile) == 0 {
+			var err error
+			cssFile, err = ioutil.ReadFile(cssFilePath)
+			if err != nil {
+				cssFile = []byte(defaultCSS)
+				fmt.Println(err)
+			}
+			atomicCssFile.Store(cssFile)
 		}
+		loadMutex.Unlock()
+		w.Header().Set("Content-Type", "text/css")
+		w.Header().Set("Content-Length", strconv.Itoa(len(cssFile)))
+		w.Write(cssFile)
 	}
-	w.Header().Set("Content-Type", "text/css")
-	w.Write(cssFile)
-}
+}()
