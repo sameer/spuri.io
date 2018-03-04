@@ -19,7 +19,7 @@ import (
 )
 
 type c0dartContext struct {
-	*globalContext
+	*staticContext
 	Images      sync.Map
 	ImageSlice  []c0dartImage
 	NextUpdate  time.Time
@@ -52,20 +52,17 @@ func (ctx *c0dartContext) serveResizer(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	} else if width != galleryWidth || height != galleryHeight {
 		http.NotFound(w, r)
+	} else if value, ok := ctx.Images.Load(fileName); !ok {
+		ctx.logger.Println("didn't find", value)
+		http.NotFound(w, r)
+	} else if value.(*c0dartImage).Data == nil {
+		ctx.logger.Println("request for", value, "but was not resized")
+		http.NotFound(w, r)
 	} else {
-		value, ok := ctx.Images.Load(fileName)
-		if !ok {
-			ctx.logger.Println("didn't find", value)
-			http.NotFound(w, r)
-		} else if value.(*c0dartImage).Data == nil {
-			ctx.logger.Println("request for", value, "but was not resized")
-			http.NotFound(w, r)
-		} else {
-			imgInfo := value.(*c0dartImage)
-			w.Header().Add("Content-Length", strconv.Itoa(len(imgInfo.Data)))
-			w.Header().Add("Cache-Control", fmt.Sprintf("private, max-age=%d", int(c0dartCacheTime.Seconds())))
-			w.Write(imgInfo.Data)
-		}
+		imgInfo := value.(*c0dartImage)
+		w.Header().Add("Content-Length", strconv.Itoa(len(imgInfo.Data)))
+		w.Header().Add("Cache-Control", fmt.Sprintf("private, max-age=%d", int(c0dartCacheTime.Seconds())))
+		w.Write(imgInfo.Data)
 	}
 }
 
@@ -106,7 +103,6 @@ var c0dartHandler = func() http.HandlerFunc {
 		defer c0dartContext.UpdateMutex.RUnlock()
 		if r.URL.Path == "" { // Gallery
 			renderTemplate(w, "c0dart_gallery", c0dartContext)
-			return
 		} else if strings.Count(r.URL.Path, "/") == 3 && strings.HasPrefix(r.URL.Path, resizerPath) { // Resizer
 			c0dartContext.serveResizer(w, r)
 		} else {
@@ -132,29 +128,30 @@ func fileNameToTitle(fileName string) string {
 func (ctx *c0dartContext) refresh() {
 	ctx.UpdateMutex.Lock()
 	defer ctx.UpdateMutex.Unlock()
-	globalCtx.Load().(context).refresh()
 	if time.Now().After(ctx.NextUpdate) {
 		if images, err := ioutil.ReadDir(c0dartDir); err == nil {
-			ctx.ImageSlice = make([]c0dartImage, len(images))
+			if ctx.ImageSlice == nil {
+				ctx.ImageSlice = make([]c0dartImage, 0, len(images))
+			}
 			resizeWaiter := sync.WaitGroup{}
 			for i := range rand.New(rand.NewSource(time.Now().UnixNano())).Perm(len(images)) {
 				if _, ok := ctx.Images.Load(images[i].Name()); !ok {
 					imageFileName := images[i].Name()
-					ctx.ImageSlice[i] = c0dartImage{
+					ctx.ImageSlice = append(ctx.ImageSlice, c0dartImage{
 						Filename: imageFileName,
 						Href:     staticHandlerPath + "c0dart/" + imageFileName,
 						Src:      fmt.Sprintf(c0dartHandlerPath+resizerPath+"\""+imageFileName+"\"/%d/%d", galleryWidth, galleryHeight),
 						Title:    fileNameToTitle(imageFileName),
 						Desc:     "", // TODO: make these fields real
 						Data:     nil,
-					}
+					})
 					resizeWaiter.Add(1)
 					go func(imgInfo *c0dartImage) {
 						defer resizeWaiter.Done()
 						if err := ctx.doResize(imgInfo); err != nil {
 							ctx.logger.Println("error in resizing", err)
 						}
-					}(&ctx.ImageSlice[i])
+					}(&ctx.ImageSlice[len(ctx.ImageSlice)-1])
 					ctx.logger.Println("resizing", images[i].Name())
 				}
 			}
@@ -162,7 +159,7 @@ func (ctx *c0dartContext) refresh() {
 		} else {
 			ctx.logger.Println("Error reading c0dart directory", err)
 		}
-		ctx.globalContext, ctx.NextUpdate = globalCtx.Load().(*globalContext), time.Now().Add(c0dartCacheTime)
+		ctx.staticContext, ctx.NextUpdate = staticCtx.Load().(*staticContext), time.Now().Add(c0dartCacheTime)
 		ctx.logger.Println("refreshed")
 	}
 }

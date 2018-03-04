@@ -17,8 +17,7 @@ var studioStatisticsHandler http.HandlerFunc = func() func(w http.ResponseWriter
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			if apiKey := r.Header.Get(apiKeyHeader); apiKey != "" && r.Header.Get("content-type") == "image/png" && subtle.ConstantTimeCompare([]byte(apiKey), []byte(os.Getenv("x_api_key"))) == 1 {
-				img, err := ioutil.ReadAll(r.Body)
-				if err != nil {
+				if img, err := ioutil.ReadAll(r.Body); err != nil {
 					atomicStatsImage.Store(img)
 				}
 			}

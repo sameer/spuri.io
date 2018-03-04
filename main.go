@@ -31,8 +31,8 @@ const (
 func main() {
 	fmt.Println("Launching...")
 	compileTemplates()
-	globalCtx.Store(&globalContext{})
-	globalCtx.Load().(*globalContext).refresh()
+	staticCtx.Store(&staticContext{})
+	staticCtx.Load().(*staticContext).init()
 	bindHandlers()
 	fmt.Println("Ready!")
 

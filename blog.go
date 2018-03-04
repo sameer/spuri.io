@@ -30,7 +30,7 @@ type BlogPage struct {
 }
 
 type blogContext struct {
-	*globalContext
+	*staticContext
 	Index       [blogIndexMax]*BlogPage
 	Page        *BlogPage
 	pages       map[uint32]*BlogPage
@@ -71,7 +71,6 @@ var blogHandler = func() http.HandlerFunc {
 }()
 
 func (ctx *blogContext) refresh() {
-	globalCtx.Load().(*globalContext).refresh()
 	if time.Now().After(ctx.NextUpdate) {
 		ctx.UpdateMutex.Lock()
 		defer ctx.UpdateMutex.Unlock()
@@ -111,7 +110,7 @@ func (ctx *blogContext) refresh() {
 			}
 		}
 
-		ctx.globalContext = globalCtx.Load().(*globalContext)
+		ctx.staticContext = staticCtx.Load().(*staticContext)
 		ctx.pages = pages
 		ctx.checksums = checksums
 		ctx.Index = Index

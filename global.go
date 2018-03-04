@@ -11,11 +11,7 @@ const (
 	globalContextCacheTime = time.Duration(time.Hour * 24 * 360) // Never refresh, it's essentially static
 )
 
-type context interface {
-	refresh()
-}
-
-type globalContext struct {
+type staticContext struct {
 	NavItems   []NavItem
 	NextUpdate time.Time
 }
@@ -26,19 +22,17 @@ type NavItem struct {
 	NewPage bool
 }
 
-var globalCtx atomic.Value
+var staticCtx atomic.Value
 
-func (this *globalContext) refresh() {
-	if time.Now().After(this.NextUpdate) {
-		*this = globalContext{
-			NavItems: []NavItem{
-				{"c0dart", "/c0dart/", false},
-				{"Blog", "/blog/", false},
-				{"Github", "https://github.com/sameer", false},
-				{"About", "/about", false},
-			},
-			NextUpdate: time.Now().Add(globalContextCacheTime),
-		}
+func (this *staticContext) init() {
+	*this = staticContext{
+		NavItems: []NavItem{
+			{"c0dart", "/c0dart/", false},
+			{"Blog", "/blog/", false},
+			{"Github", "https://github.com/sameer", false},
+			{"About", "/about", false},
+		},
+		NextUpdate: time.Now().Add(globalContextCacheTime),
 	}
 }
 
