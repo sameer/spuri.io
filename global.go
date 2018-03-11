@@ -3,17 +3,11 @@ package main
 import (
 	"net/http"
 	"runtime"
-	"time"
 	"sync/atomic"
 )
 
-const (
-	globalContextCacheTime = time.Duration(time.Hour * 24 * 360) // Never refresh, it's essentially static
-)
-
 type staticContext struct {
-	NavItems   []NavItem
-	NextUpdate time.Time
+	NavItems []NavItem
 }
 
 type NavItem struct {
@@ -24,15 +18,14 @@ type NavItem struct {
 
 var staticCtx atomic.Value
 
-func (this *staticContext) init() {
-	*this = staticContext{
+func (this staticContext) init() staticContext {
+	return staticContext{
 		NavItems: []NavItem{
 			{"c0dart", "/c0dart/", false},
 			{"Blog", "/blog/", false},
 			{"Github", "https://github.com/sameer", false},
 			{"About", "/about", false},
 		},
-		NextUpdate: time.Now().Add(globalContextCacheTime),
 	}
 }
 

@@ -30,7 +30,7 @@ type BlogPage struct {
 }
 
 type blogContext struct {
-	*staticContext
+	staticContext
 	Index       [blogIndexMax]*BlogPage
 	Page        *BlogPage
 	pages       map[uint32]*BlogPage
@@ -102,15 +102,12 @@ func (ctx *blogContext) refresh() {
 		var Index [blogIndexMax]*BlogPage
 		for i, checksum := range checksums {
 			Index[i] = pages[checksum]
-			if len(Index) == blogIndexMax {
-				break
-			}
-			if len(Index) == blogIndexMax {
+			if i+1 == blogIndexMax {
 				break
 			}
 		}
 
-		ctx.staticContext = staticCtx.Load().(*staticContext)
+		ctx.staticContext = staticCtx.Load().(staticContext)
 		ctx.pages = pages
 		ctx.checksums = checksums
 		ctx.Index = Index

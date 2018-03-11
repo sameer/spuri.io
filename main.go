@@ -22,17 +22,16 @@ const (
 	c0dartDir         = staticDir + "c0dart/"
 	blogDir           = "./blog/"
 
-	prodBindAddress        = "[0:0:0:0:0:0:0:0]:80"
-	devBindAddress         = "127.0.0.1:8000"
-	devEnvironmentVariable = "DEV"
+	prodBindAddress           = "[0:0:0:0:0:0:0:0]:80"
+	devBindAddress            = "127.0.0.1:8000"
+	devEnvironmentVariable    = "DEV"
 	prodIpEnvironmentVariable = "PROD_IP"
 )
 
 func main() {
 	fmt.Println("Launching...")
 	compileTemplates()
-	staticCtx.Store(&staticContext{})
-	staticCtx.Load().(*staticContext).init()
+	staticCtx.Store(staticContext{}.init())
 	bindHandlers()
 	fmt.Println("Ready!")
 
@@ -66,10 +65,15 @@ func bindHandlers() {
 }
 
 func compileTemplates() {
-	compileTemplate("error", "base")
-	compileTemplate("index", "base")
-	compileTemplate("blog_index", "base")
-	compileTemplate("blog_page", "base")
-	compileTemplate("c0dart_gallery", "base")
-	compileTemplate("about", "base")
+	templates := [][]string{
+		{"error", "base"},
+		{"index", "base"},
+		{"blog_index", "base"},
+		{"blog_page", "base"},
+		{"c0dart_gallery", "base"},
+		{"about", "base"},
+	}
+	for _, toCompile := range templates {
+		compileTemplate(toCompile...)
+	}
 }

@@ -7,19 +7,19 @@ import (
 	"image"
 	"image/png"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"unicode"
-	"strconv"
-	"log"
 )
 
 type c0dartContext struct {
-	*staticContext
+	staticContext
 	Images      sync.Map
 	ImageSlice  []c0dartImage
 	NextUpdate  time.Time
@@ -159,7 +159,7 @@ func (ctx *c0dartContext) refresh() {
 		} else {
 			ctx.logger.Println("Error reading c0dart directory", err)
 		}
-		ctx.staticContext, ctx.NextUpdate = staticCtx.Load().(*staticContext), time.Now().Add(c0dartCacheTime)
+		ctx.staticContext, ctx.NextUpdate = staticCtx.Load().(staticContext), time.Now().Add(c0dartCacheTime)
 		ctx.logger.Println("refreshed")
 	}
 }

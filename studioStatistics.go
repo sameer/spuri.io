@@ -1,12 +1,12 @@
 package main
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
-	"crypto/subtle"
 	"os"
+	"strconv"
 	"sync/atomic"
 )
 
