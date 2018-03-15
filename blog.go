@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -31,12 +30,10 @@ type BlogPage struct {
 
 type blogContext struct {
 	staticContext
-	Index       [blogIndexMax]*BlogPage
-	Page        *BlogPage
-	pages       map[uint32]*BlogPage
-	checksums   []uint32
-	NextUpdate  time.Time
-	UpdateMutex sync.RWMutex
+	Index     [blogIndexMax]*BlogPage
+	Page      *BlogPage
+	pages     map[uint32]*BlogPage
+	checksums []uint32
 }
 
 func (ctx *blogContext) serveIndex(w http.ResponseWriter, r *http.Request) {
@@ -56,24 +53,26 @@ func (ctx *blogContext) servePage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var blogHandler = func() http.HandlerFunc {
-	ctx := &blogContext{}
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx.refresh()
-		ctx.UpdateMutex.RLock()
-		defer ctx.UpdateMutex.RUnlock()
-		if len(r.URL.Path) == 0 { // Request for index
-			ctx.serveIndex(w, r)
-		} else { // Req for page, need to do handling of this
-			ctx.servePage(w, r)
-		}
-	}
-}()
-
-func (ctx *blogContext) refresh() {
-	if time.Now().After(ctx.NextUpdate) {
-		ctx.UpdateMutex.Lock()
-		defer ctx.UpdateMutex.Unlock()
+var blogHandler = handlerWithUpdatableState{
+	handlerWithFinalState: handlerWithFinalState{
+		handlerGenericAttributes: handlerGenericAttributes{
+			pathStr: blogHandlerPath,
+			stripPrefix: true,
+		},
+		handler: func(w http.ResponseWriter, r *http.Request, s state) {
+			ctx := s.(blogContext)
+			if len(r.URL.Path) == 0 { // Request for index
+				ctx.serveIndex(w, r)
+			} else { // Req for page, need to do handling of this
+				ctx.servePage(w, r)
+			}
+		},
+		initializer: func() state {
+			return blogContext{}
+		},
+	},
+	updater: func(_ state) state {
+		ctx := blogContext{}
 		pages := make(map[uint32]*BlogPage)
 		filepath.Walk(blogDir, func(path string, info os.FileInfo, err error) error {
 			if err == nil && !info.IsDir() && strings.HasSuffix(info.Name(), "md") {
@@ -111,6 +110,7 @@ func (ctx *blogContext) refresh() {
 		ctx.pages = pages
 		ctx.checksums = checksums
 		ctx.Index = Index
-		ctx.NextUpdate = time.Now().Add(blogCacheTime)
-	}
+		return ctx
+	},
+	updatePeriod: blogCacheTime,
 }

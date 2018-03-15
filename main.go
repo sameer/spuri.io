@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 )
 
 const (
@@ -32,40 +33,38 @@ func main() {
 	fmt.Println("Launching...")
 	compileTemplates()
 	staticCtx.Store(staticContext{}.init())
-	bindHandlers()
-	fmt.Println("Ready!")
+
+	(&handlerCoordinator{
+		handlers: []handlerInterface{
+			&staticHandler,
+			&cssHandler,
+			&blogHandler,
+			&c0dartHandler,
+			&aboutHandler,
+			&studioStatisticsHandler,
+			&indexHandler,
+		},
+	}).start(http.DefaultServeMux, time.Minute)
+
+	fmt.Println("Initialized!")
 
 	bindAddress := prodBindAddress
 	if ip := os.Getenv(prodIpEnvironmentVariable); ip != "" {
 		bindAddress = ip
 	} else if os.Getenv(devEnvironmentVariable) != "" {
 		bindAddress = devBindAddress
+		fmt.Println("Environment is dev")
+	} else {
+		panic("Environment is unknown!")
 	}
-	err := http.ListenAndServe(bindAddress, nil)
-	if err != nil {
+	fmt.Println("Listening on", bindAddress)
+	if err := http.ListenAndServe(bindAddress, nil); err != nil {
 		fmt.Printf("Error while launching %v\n", err)
 	}
 }
 
-func bindHandler(path string, handler http.Handler) {
-	http.Handle(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		globalSetHeaders(w, r)
-		handler.ServeHTTP(w, r)
-	}))
-}
-
-func bindHandlers() {
-	bindHandler(staticHandlerPath, http.StripPrefix(staticHandlerPath, staticHandler))
-	bindHandler(cssHandlerPath, cssHandler)
-	bindHandler(blogHandlerPath, http.StripPrefix(blogHandlerPath, blogHandler))
-	bindHandler(c0dartHandlerPath, http.StripPrefix(c0dartHandlerPath, c0dartHandler))
-	bindHandler(aboutHandlerPath, aboutHandler)
-	bindHandler(studioStatisticsHandlerPath, studioStatisticsHandler)
-	bindHandler(indexHandlerPath, indexHandler)
-}
-
 func compileTemplates() {
-	templates := [][]string{
+	templates := [6][2]string{
 		{"error", "base"},
 		{"index", "base"},
 		{"blog_index", "base"},
@@ -74,6 +73,6 @@ func compileTemplates() {
 		{"about", "base"},
 	}
 	for _, toCompile := range templates {
-		compileTemplate(toCompile...)
+		compileTemplate(toCompile[0], toCompile[1])
 	}
 }

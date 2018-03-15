@@ -20,11 +20,9 @@ import (
 
 type c0dartContext struct {
 	staticContext
-	Images      sync.Map
-	ImageSlice  []c0dartImage
-	NextUpdate  time.Time
-	UpdateMutex sync.RWMutex
-	logger      *log.Logger
+	Images     map[string]*c0dartImage
+	ImageSlice []c0dartImage
+	logger     *log.Logger
 }
 
 type c0dartImage struct {
@@ -44,98 +42,32 @@ const (
 	c0dartCacheTime = time.Duration(1 * time.Hour)
 )
 
-func (ctx *c0dartContext) serveResizer(w http.ResponseWriter, r *http.Request) {
-	var fileName string
-	var width, height int
-
-	if _, err := fmt.Sscanf(r.URL.Path, "resizer/%q/%d/%d", &fileName, &width, &height); err != nil {
-		http.NotFound(w, r)
-	} else if width != galleryWidth || height != galleryHeight {
-		http.NotFound(w, r)
-	} else if value, ok := ctx.Images.Load(fileName); !ok {
-		ctx.logger.Println("didn't find", value)
-		http.NotFound(w, r)
-	} else if value.(*c0dartImage).Data == nil {
-		ctx.logger.Println("request for", value, "but was not resized")
-		http.NotFound(w, r)
-	} else {
-		imgInfo := value.(*c0dartImage)
-		w.Header().Add("Content-Length", strconv.Itoa(len(imgInfo.Data)))
-		w.Header().Add("Cache-Control", fmt.Sprintf("private, max-age=%d", int(c0dartCacheTime.Seconds())))
-		w.Write(imgInfo.Data)
-	}
-}
-
-func (ctx *c0dartContext) doResize(imgInfo *c0dartImage) error {
-	imgFileName := imgInfo.Filename
-	defer ctx.Images.Store(imgFileName, imgInfo)
-	imgFilePath := c0dartDir + imgFileName
-	if _, err := os.Stat(imgFilePath); os.IsNotExist(err) {
-		ctx.logger.Println("couldn't find file", imgFileName, ":", err)
-		return err
-	} else if os.IsPermission(err) {
-		ctx.logger.Println("don't have permissions for file", imgFileName, ":", err)
-	} else if _, ok := ctx.Images.Load(imgFileName); ok {
-		return nil
-	}
-	imgFile, err := os.Open(imgFilePath)
-	if err != nil {
-		ctx.logger.Println("failed to open image", err)
-		return err
-	}
-	decodedImgFile, _, err := image.Decode(imgFile)
-	if err != nil {
-		ctx.logger.Println("failed to decode image", err)
-		return err
-	}
-	var bufout bytes.Buffer
-	resizedImage := imaging.Resize(decodedImgFile, galleryWidth, galleryHeight, imaging.Lanczos)
-	png.Encode(&bufout, resizedImage)
-	imgInfo.Data = bufout.Bytes()
-	return nil
-}
-
-var c0dartHandler = func() http.HandlerFunc {
-	c0dartContext := &c0dartContext{logger: log.New(os.Stdout, "C0dart ", log.LstdFlags)}
-	return func(w http.ResponseWriter, r *http.Request) {
-		c0dartContext.refresh()
-		c0dartContext.UpdateMutex.RLock()
-		defer c0dartContext.UpdateMutex.RUnlock()
-		if r.URL.Path == "" { // Gallery
-			renderTemplate(w, "c0dart_gallery", c0dartContext)
-		} else if strings.Count(r.URL.Path, "/") == 3 && strings.HasPrefix(r.URL.Path, resizerPath) { // Resizer
-			c0dartContext.serveResizer(w, r)
-		} else {
-			http.NotFound(w, r)
-		}
-	}
-}()
-
-func fileNameToTitle(fileName string) string {
-	var outstring = ""
-	for _, r := range fileName {
-		if unicode.IsUpper(r) {
-			outstring += " " + string(r)
-		} else if r == '.' {
-			break
-		} else {
-			outstring += string(r)
-		}
-	}
-	return outstring
-}
-
-func (ctx *c0dartContext) refresh() {
-	ctx.UpdateMutex.Lock()
-	defer ctx.UpdateMutex.Unlock()
-	if time.Now().After(ctx.NextUpdate) {
+var c0dartHandler = handlerWithUpdatableState{
+	updatePeriod: c0dartCacheTime,
+	handlerWithFinalState: handlerWithFinalState{
+		handlerGenericAttributes: handlerGenericAttributes{c0dartHandlerPath, true},
+		handler: func(w http.ResponseWriter, r *http.Request, s state) {
+			if ctx := s.(c0dartContext); r.URL.Path == "" { // Gallery
+				renderTemplate(w, "c0dart_gallery", ctx)
+			} else if strings.Count(r.URL.Path, "/") == 3 && strings.HasPrefix(r.URL.Path, resizerPath) { // Resizer
+				ctx.serveResized(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		},
+		initializer: func() state {
+			return c0dartContext{logger: log.New(os.Stdout, "C0dart ", log.LstdFlags), Images: make(map[string]*c0dartImage)}
+		},
+	},
+	updater: func(s state) state {
+		ctx := c0dartContext{logger: s.(c0dartContext).logger, Images: make(map[string]*c0dartImage)}
 		if images, err := ioutil.ReadDir(c0dartDir); err == nil {
 			if ctx.ImageSlice == nil {
 				ctx.ImageSlice = make([]c0dartImage, 0, len(images))
 			}
 			resizeWaiter := sync.WaitGroup{}
 			for i := range rand.New(rand.NewSource(time.Now().UnixNano())).Perm(len(images)) {
-				if _, ok := ctx.Images.Load(images[i].Name()); !ok {
+				if _, ok := ctx.Images[images[i].Name()]; !ok {
 					imageFileName := images[i].Name()
 					ctx.ImageSlice = append(ctx.ImageSlice, c0dartImage{
 						Filename: imageFileName,
@@ -159,7 +91,72 @@ func (ctx *c0dartContext) refresh() {
 		} else {
 			ctx.logger.Println("Error reading c0dart directory", err)
 		}
-		ctx.staticContext, ctx.NextUpdate = staticCtx.Load().(staticContext), time.Now().Add(c0dartCacheTime)
+		ctx.staticContext = staticCtx.Load().(staticContext)
 		ctx.logger.Println("refreshed")
+		return ctx
+	},
+}
+
+func (ctx *c0dartContext) serveResized(w http.ResponseWriter, r *http.Request) {
+	var fileName string
+	var width, height int
+
+	if _, err := fmt.Sscanf(r.URL.Path, "resizer/%q/%d/%d", &fileName, &width, &height); err != nil {
+		http.NotFound(w, r)
+	} else if width != galleryWidth || height != galleryHeight {
+		http.NotFound(w, r)
+	} else if value, ok := ctx.Images[fileName]; !ok {
+		ctx.logger.Println("didn't find", value)
+		http.NotFound(w, r)
+	} else if value.Data == nil {
+		ctx.logger.Println("request for", value, "but was not resized")
+		http.NotFound(w, r)
+	} else {
+		w.Header().Add("Content-Length", strconv.Itoa(len(value.Data)))
+		w.Header().Add("Cache-Control", fmt.Sprintf("private, max-age=%d", int(c0dartCacheTime.Seconds())))
+		w.Write(value.Data)
 	}
+}
+
+func (ctx *c0dartContext) doResize(imgInfo *c0dartImage) error {
+	imgFileName := imgInfo.Filename
+	defer func() { ctx.Images[imgFileName] = imgInfo }()
+	imgFilePath := c0dartDir + imgFileName
+	if _, err := os.Stat(imgFilePath); os.IsNotExist(err) {
+		ctx.logger.Println("couldn't find file", imgFileName, ":", err)
+		return err
+	} else if os.IsPermission(err) {
+		ctx.logger.Println("don't have permissions for file", imgFileName, ":", err)
+	} else if _, ok := ctx.Images[imgFileName]; ok {
+		return nil
+	}
+	imgFile, err := os.Open(imgFilePath)
+	if err != nil {
+		ctx.logger.Println("failed to open image", err)
+		return err
+	}
+	decodedImgFile, _, err := image.Decode(imgFile)
+	if err != nil {
+		ctx.logger.Println("failed to decode image", err)
+		return err
+	}
+	var bufout bytes.Buffer
+	resizedImage := imaging.Resize(decodedImgFile, galleryWidth, galleryHeight, imaging.Lanczos)
+	png.Encode(&bufout, resizedImage)
+	imgInfo.Data = bufout.Bytes()
+	return nil
+}
+
+func fileNameToTitle(fileName string) string {
+	var outstring = ""
+	for _, r := range fileName {
+		if unicode.IsUpper(r) {
+			outstring += " " + string(r)
+		} else if r == '.' {
+			break
+		} else {
+			outstring += string(r)
+		}
+	}
+	return outstring
 }

@@ -20,8 +20,7 @@ func compileTemplate(tmpls ...string) {
 // Takes a template name and renders the corresponding template. If there's an error in rendering, it handles it.
 func renderTemplate(w http.ResponseWriter, tmpl string, ctx interface{}) {
 	w.Header().Set("Content-Type", "text/html")
-	err := templates[tmpl].ExecuteTemplate(w, "base", ctx)
-	if err != nil {
+	if err := templates[tmpl].ExecuteTemplate(w, "base", ctx); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
