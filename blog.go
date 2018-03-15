@@ -56,7 +56,7 @@ func (ctx *blogContext) servePage(w http.ResponseWriter, r *http.Request) {
 var blogHandler = handlerWithUpdatableState{
 	handlerWithFinalState: handlerWithFinalState{
 		handlerGenericAttributes: handlerGenericAttributes{
-			pathStr: blogHandlerPath,
+			pathStr:     blogHandlerPath,
 			stripPrefix: true,
 		},
 		handler: func(w http.ResponseWriter, r *http.Request, s state) {

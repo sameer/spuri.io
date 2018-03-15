@@ -2,10 +2,10 @@ package main
 
 import (
 	"net/http"
+	"net/url"
+	"strings"
 	"sync/atomic"
 	"time"
-	"strings"
-	"net/url"
 )
 
 type handlerCoordinator struct {
@@ -15,11 +15,11 @@ type handlerCoordinator struct {
 func (c *handlerCoordinator) start(mux *http.ServeMux, notifyPeriod time.Duration) {
 	// Do initialization
 	for _, handler := range c.handlers {
-		if hFS, ok := handler.(*handlerWithFinalState); ok {
-			hFS.init()
-		} else if hS, ok := handler.(*handlerWithUpdatableState); ok {
-			hS.init()
-			hS.startUpdater()
+		if h, ok := handler.(*handlerWithFinalState); ok {
+			h.init()
+		} else if h, ok := handler.(*handlerWithUpdatableState); ok {
+			h.init()
+			h.startUpdater()
 		}
 	}
 	// Install handlers
@@ -69,7 +69,7 @@ type handlerWithUpdatableState struct {
 func (hS *handlerWithUpdatableState) startUpdater() {
 	go func() {
 		t := time.NewTicker(hS.updatePeriod)
-		for {
+		for { // Can't just range t.C because we want a "do while" behavior where 1 update happens at t = 0
 			if now := time.Now(); hS.updatedLast.Add(hS.updatePeriod).Before(now) {
 				hS.state.Store(hS.updater(hS.state.Load()))
 				hS.updatedLast = now
