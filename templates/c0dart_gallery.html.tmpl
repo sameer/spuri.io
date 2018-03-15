@@ -2,7 +2,7 @@
 {{ define "title" }}c0dart Gallery{{ end }}
 {{ define "content" }} 
 {{ if .Images }}
-<h2>Gallery</h2>
+<h2>Gallery (click to view full-size)</h2>
 {{ range $imgInfo := .ImageSlice }}
 <a href="{{ $imgInfo.Href }}"><img src="{{ $imgInfo.Src }}" alt="{{ $imgInfo.Title }}"></a>
 <h3>{{ $imgInfo.Title }}</h3><br>
