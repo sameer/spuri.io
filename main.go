@@ -23,10 +23,11 @@ const (
 	c0dartDir         = staticDir + "c0dart/"
 	blogDir           = "./blog/"
 
-	prodBindAddress           = "[0:0:0:0:0:0:0:0]:80"
 	devBindAddress            = "127.0.0.1:8000"
 	devEnvironmentVariable    = "DEV"
 	prodIpEnvironmentVariable = "PROD_IP"
+	certEnvironmentVariable   = "CERT_FILE"
+	keyEnvironmentVariable    = "KEY_FILE"
 )
 
 func main() {
@@ -48,7 +49,7 @@ func main() {
 
 	fmt.Println("Initialized!")
 
-	bindAddress := prodBindAddress
+	var bindAddress string
 	if ip := os.Getenv(prodIpEnvironmentVariable); ip != "" {
 		bindAddress = ip
 	} else if os.Getenv(devEnvironmentVariable) != "" {
@@ -57,9 +58,18 @@ func main() {
 	} else {
 		panic("Environment is unknown!")
 	}
-	fmt.Println("Listening on", bindAddress)
-	if err := http.ListenAndServe(bindAddress, nil); err != nil {
-		fmt.Printf("Error while launching %v\n", err)
+	bindAddressTLS := bindAddress + ":443"
+	bindAddress += ":80"
+
+	go func() {
+		fmt.Println("Listening on", bindAddress)
+		http.ListenAndServe(bindAddress, nil)
+	}()
+	if cert, key := os.Getenv(certEnvironmentVariable), os.Getenv(keyEnvironmentVariable); cert != "" && key != "" {
+		go func() {
+			fmt.Println("Listening on", bindAddressTLS)
+			http.ListenAndServeTLS(bindAddressTLS, cert, key, nil)
+		}()
 	}
 }
 
