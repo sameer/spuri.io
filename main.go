@@ -61,16 +61,14 @@ func main() {
 	bindAddressTLS := bindAddress + ":443"
 	bindAddress += ":80"
 
-	go func() {
-		fmt.Println("Listening on", bindAddress)
-		http.ListenAndServe(bindAddress, nil)
-	}()
 	if cert, key := os.Getenv(certEnvironmentVariable), os.Getenv(keyEnvironmentVariable); cert != "" && key != "" {
 		go func() {
 			fmt.Println("Listening on", bindAddressTLS)
 			http.ListenAndServeTLS(bindAddressTLS, cert, key, nil)
 		}()
 	}
+	fmt.Println("Listening on", bindAddress)
+	http.ListenAndServe(bindAddress, nil)
 }
 
 func compileTemplates() {
