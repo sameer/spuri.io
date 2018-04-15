@@ -56,6 +56,7 @@ func (h *handlerWithFinalState) init() {
 }
 
 func (h *handlerWithFinalState) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	globalSetHeaders(w, r)
 	h.handler(w, r, h.state.Load())
 }
 
@@ -87,6 +88,7 @@ type handlerWithoutState struct {
 }
 
 func (h *handlerWithoutState) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	globalSetHeaders(w, r)
 	h.handler.ServeHTTP(w, r)
 }
 

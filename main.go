@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -30,10 +31,12 @@ const (
 	keyEnvironmentVariable    = "KEY_FILE"
 )
 
+func init() {
+	compileTemplates()
+}
+
 func main() {
 	fmt.Println("Launching...")
-	compileTemplates()
-	staticCtx.Store(staticContext{}.init())
 
 	(&handlerCoordinator{
 		handlers: []handlerInterface{
@@ -52,6 +55,8 @@ func main() {
 	var bindAddress string
 	if ip := os.Getenv(prodIpEnvironmentVariable); ip != "" {
 		bindAddress = ip
+		bindAddress += ":80"
+
 	} else if os.Getenv(devEnvironmentVariable) != "" {
 		bindAddress = devBindAddress
 		fmt.Println("Environment is dev")
@@ -59,7 +64,6 @@ func main() {
 		panic("Environment is unknown!")
 	}
 	bindAddressTLS := bindAddress + ":443"
-	bindAddress += ":80"
 
 	if cert, key := os.Getenv(certEnvironmentVariable), os.Getenv(keyEnvironmentVariable); cert != "" && key != "" {
 		go func() {
@@ -68,7 +72,10 @@ func main() {
 		}()
 	}
 	fmt.Println("Listening on", bindAddress)
-	http.ListenAndServe(bindAddress, nil)
+	err := http.ListenAndServe(bindAddress, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func compileTemplates() {

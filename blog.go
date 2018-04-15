@@ -106,7 +106,7 @@ var blogHandler = handlerWithUpdatableState{
 			}
 		}
 
-		ctx.staticContext = staticCtx.Load().(staticContext)
+		ctx.staticContext = staticCtx
 		ctx.pages = pages
 		ctx.checksums = checksums
 		ctx.Index = Index

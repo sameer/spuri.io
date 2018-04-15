@@ -7,6 +7,8 @@ import (
 	"strconv"
 )
 
+const cssDefault = "* { font-family: sans-serif; }"
+
 var cssHandler = handlerWithFinalState{
 	handlerGenericAttributes: handlerGenericAttributes{cssHandlerPath, false},
 	handler: func(w http.ResponseWriter, r *http.Request, s state) {
@@ -15,11 +17,11 @@ var cssHandler = handlerWithFinalState{
 		w.Write(s.([]byte))
 	},
 	initializer: func() state {
-		const defaultCSS = "* { font-family: sans-serif; }"
+
 		// Keep the file in-memory because it's only several KB & lowers load time.
 		cssFile, err := ioutil.ReadFile(cssFilePath)
 		if err != nil {
-			cssFile = []byte(defaultCSS)
+			cssFile = []byte(cssDefault)
 			fmt.Println(err)
 		}
 		return cssFile

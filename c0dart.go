@@ -91,7 +91,7 @@ var c0dartHandler = handlerWithUpdatableState{
 		} else {
 			ctx.logger.Println("Error reading c0dart directory", err)
 		}
-		ctx.staticContext = staticCtx.Load().(staticContext)
+		ctx.staticContext = staticCtx
 		ctx.logger.Println("refreshed")
 		return ctx
 	},

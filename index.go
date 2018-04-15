@@ -8,7 +8,7 @@ var indexHandler = handlerWithoutState{
 			// TODO: render not found page
 			http.NotFound(w, r)
 		} else {
-			renderTemplate(w, "index", staticCtx.Load())
+			renderTemplate(w, "index", staticCtx)
 		}
 	}),
 	handlerGenericAttributes: handlerGenericAttributes{indexHandlerPath, false},
