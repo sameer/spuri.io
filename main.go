@@ -75,9 +75,8 @@ func main() {
 	var bindAddress string
 	var bindAddressTLS string
 	if ip := os.Getenv(prodIpEnvironmentVariable); ip != "" {
-		bindAddress = ip
-		bindAddress += ":80"
-		bindAddressTLS = bindAddress + ":443"
+		bindAddress = ip + ":80"
+		bindAddressTLS = ip + ":443"
 	} else if os.Getenv(devEnvironmentVariable) != "" {
 		bindAddress = devBindAddress
 		log.Println("Environment is dev")
