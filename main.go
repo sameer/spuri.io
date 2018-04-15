@@ -13,7 +13,7 @@ const (
 	staticHandlerPath           = "/static/"
 	cssHandlerPath              = "/style.css"
 	blogHandlerPath             = "/blog/"
-	c0dartHandlerPath           = "/c0dart/"
+	codeArtHandlerPath          = "/codeArt/"
 	aboutHandlerPath            = "/about"
 	studioStatisticsHandlerPath = "/studio-statistics.png"
 	indexHandlerPath            = "/"
@@ -22,7 +22,7 @@ const (
 	cssFilePath       = staticDir + "style.css"
 	templateDir       = "./templates/"
 	templateExtension = ".html.tmpl"
-	c0dartDir         = staticDir + "c0dart/"
+	codeArtDir        = staticDir + "codeArt/"
 	blogDir           = "./blog/"
 
 	devBindAddress            = "127.0.0.1:8000"
@@ -63,7 +63,7 @@ func main() {
 			&staticHandler,
 			&cssHandler,
 			&blogHandler,
-			&c0dartHandler,
+			&codeArtHandler,
 			&aboutHandler,
 			&studioStatisticsHandler,
 			&indexHandler,
@@ -111,7 +111,7 @@ func compileTemplates() {
 		{"index", "base"},
 		{"blog_index", "base"},
 		{"blog_page", "base"},
-		{"c0dart_gallery", "base"},
+		{"codeArt_gallery", "base"},
 		{"about", "base"},
 	}
 	for _, toCompile := range templates {

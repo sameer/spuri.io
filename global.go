@@ -31,10 +31,10 @@ func init() {
 	}
 	staticCtx = staticContext{
 		NavItems: []NavItem{
-			{"c0dart", "/c0dart/", false},
-			{"Blog", "/blog/", false},
+			{"Code Art", codeArtHandlerPath, false},
+			{"Blog", blogHandlerPath, false},
 			{"Github", "https://github.com/sameer", false},
-			{"About", "/about", false},
+			{"About", aboutHandlerPath, false},
 		},
 		CssFileHash: fmt.Sprintf("sha512-%s", base64.StdEncoding.EncodeToString(sha_512.Sum(nil))),
 	}
