@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"runtime"
 	"encoding/base64"
-	"crypto/sha256"
+	"crypto/sha512"
 )
 
 type staticContext struct {
@@ -23,7 +23,7 @@ type NavItem struct {
 var staticCtx staticContext
 
 func init() {
-	sha_512 := sha256.New()
+	sha_512 := sha512.New()
 	if cssFileContent, err := ioutil.ReadFile(cssFilePath); err == nil {
 		sha_512.Write(cssFileContent)
 	} else { // If we failed here, in all likelihood, the CSS handler will fail too...
@@ -36,7 +36,7 @@ func init() {
 			{"Github", "https://github.com/sameer", false},
 			{"About", "/about", false},
 		},
-		CssFileHash: fmt.Sprintf("sha256-%s", base64.StdEncoding.EncodeToString(sha_512.Sum(nil))),
+		CssFileHash: fmt.Sprintf("sha512-%s", base64.StdEncoding.EncodeToString(sha_512.Sum(nil))),
 	}
 }
 
