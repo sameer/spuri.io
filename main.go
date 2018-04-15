@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -33,10 +34,25 @@ const (
 
 func init() {
 	compileTemplates()
+	goGracefulShutdownHandler()
 }
 
+func goGracefulShutdownHandler() {
+	sigchan := make(chan os.Signal, 2)
+	signal.Notify(sigchan, os.Kill, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		sig := <-sigchan
+		log.Println("Gracefully shutting down (", sig, ")...")
+		if server != nil {
+			server.Shutdown(nil)
+		}
+	}()
+}
+
+var server *http.Server
+
 func main() {
-	fmt.Println("Launching...")
+	log.Println("Launching...")
 
 	(&handlerCoordinator{
 		handlers: []handlerInterface{
@@ -50,7 +66,7 @@ func main() {
 		},
 	}).start(http.DefaultServeMux, time.Minute)
 
-	fmt.Println("Initialized!")
+	log.Println("Initialized!")
 
 	var bindAddress string
 	if ip := os.Getenv(prodIpEnvironmentVariable); ip != "" {
@@ -59,7 +75,7 @@ func main() {
 
 	} else if os.Getenv(devEnvironmentVariable) != "" {
 		bindAddress = devBindAddress
-		fmt.Println("Environment is dev")
+		log.Println("Environment is dev")
 	} else {
 		panic("Environment is unknown!")
 	}
@@ -67,13 +83,14 @@ func main() {
 
 	if cert, key := os.Getenv(certEnvironmentVariable), os.Getenv(keyEnvironmentVariable); cert != "" && key != "" {
 		go func() {
-			fmt.Println("Listening on", bindAddressTLS)
+			log.Println("Listening on", bindAddressTLS)
 			http.ListenAndServeTLS(bindAddressTLS, cert, key, nil)
 		}()
 	}
-	fmt.Println("Listening on", bindAddress)
-	err := http.ListenAndServe(bindAddress, nil)
-	if err != nil {
+	log.Println("Listening on", bindAddress)
+	server = &http.Server{Addr: bindAddress, Handler: nil}
+	err := server.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 }

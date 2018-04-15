@@ -56,7 +56,7 @@ var c0dartHandler = handlerWithUpdatableState{
 			}
 		},
 		initializer: func() state {
-			return c0dartContext{logger: log.New(os.Stdout, "C0dart ", log.LstdFlags), Images: make(map[string]*c0dartImage)}
+			return c0dartContext{logger: log.New(os.Stdout, "c0dart ", log.LstdFlags), Images: make(map[string]*c0dartImage)}
 		},
 	},
 	updater: func(s state) state {

@@ -6,6 +6,7 @@ import (
 	"hash/crc32"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -34,6 +35,7 @@ type blogContext struct {
 	Page      *BlogPage
 	pages     map[uint32]*BlogPage
 	checksums []uint32
+	logger    *log.Logger
 }
 
 func (ctx *blogContext) serveIndex(w http.ResponseWriter, r *http.Request) {
@@ -68,16 +70,18 @@ var blogHandler = handlerWithUpdatableState{
 			}
 		},
 		initializer: func() state {
-			return blogContext{}
+			return blogContext{
+				logger: log.New(os.Stdout, "blog ", log.LstdFlags),
+			}
 		},
 	},
-	updater: func(_ state) state {
-		ctx := blogContext{}
+	updater: func(s state) state {
+		ctx := blogContext{logger: s.(blogContext).logger}
 		pages := make(map[uint32]*BlogPage)
 		filepath.Walk(blogDir, func(path string, info os.FileInfo, err error) error {
 			if err == nil && !info.IsDir() && strings.HasSuffix(info.Name(), "md") {
 				bytes, err := ioutil.ReadFile(path)
-				fmt.Println("adding", path)
+				ctx.logger.Println("adding", path)
 				if err != nil {
 					return err
 				}

@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -21,7 +22,7 @@ var studioStatisticsHandler = handlerWithoutState{handlerGenericAttributes{studi
 					if img, err := ioutil.ReadAll(r.Body); err != nil {
 						atomicStatsImage.Store(img)
 					} else {
-						fmt.Println(err)
+						log.Println(err)
 					}
 				}
 			} else if r.Method == http.MethodGet {

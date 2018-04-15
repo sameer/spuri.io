@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -22,7 +22,7 @@ var cssHandler = handlerWithFinalState{
 		cssFile, err := ioutil.ReadFile(cssFilePath)
 		if err != nil {
 			cssFile = []byte(cssDefault)
-			fmt.Println(err)
+			log.Println(err)
 		}
 		return cssFile
 	},

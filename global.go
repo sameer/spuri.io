@@ -1,12 +1,12 @@
 package main
 
 import (
+	"crypto/sha512"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"runtime"
-	"encoding/base64"
-	"crypto/sha512"
 )
 
 type staticContext struct {
