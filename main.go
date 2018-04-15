@@ -43,13 +43,17 @@ func goGracefulShutdownHandler() {
 	go func() {
 		sig := <-sigchan
 		log.Println("Gracefully shutting down (", sig, ")...")
-		if server != nil {
-			server.Shutdown(nil)
+		if httpServer != nil {
+			httpServer.Shutdown(nil)
+		}
+		if httpsServer != nil {
+			httpsServer.Shutdown(nil)
 		}
 	}()
 }
 
-var server *http.Server
+var httpServer *http.Server
+var httpsServer *http.Server
 
 func main() {
 	log.Println("Launching...")
@@ -69,29 +73,36 @@ func main() {
 	log.Println("Initialized!")
 
 	var bindAddress string
+	var bindAddressTLS string
 	if ip := os.Getenv(prodIpEnvironmentVariable); ip != "" {
 		bindAddress = ip
 		bindAddress += ":80"
-
+		bindAddressTLS = bindAddress + ":443"
 	} else if os.Getenv(devEnvironmentVariable) != "" {
 		bindAddress = devBindAddress
 		log.Println("Environment is dev")
 	} else {
 		panic("Environment is unknown!")
 	}
-	bindAddressTLS := bindAddress + ":443"
-
 	if cert, key := os.Getenv(certEnvironmentVariable), os.Getenv(keyEnvironmentVariable); cert != "" && key != "" {
-		go func() {
-			log.Println("Listening on", bindAddressTLS)
-			http.ListenAndServeTLS(bindAddressTLS, cert, key, nil)
-		}()
+		if bindAddressTLS == "" {
+			log.Println("No TLS bind address provided, not starting")
+		} else {
+			httpsServer = &http.Server{Addr: bindAddressTLS, Handler: nil}
+			go func() {
+				log.Println("Listening on", bindAddressTLS)
+				err := http.ListenAndServeTLS(bindAddressTLS, cert, key, nil)
+				if err != nil && err != http.ErrServerClosed {
+					log.Fatalln(err)
+				}
+			}()
+		}
 	}
 	log.Println("Listening on", bindAddress)
-	server = &http.Server{Addr: bindAddress, Handler: nil}
-	err := server.ListenAndServe()
+	httpServer = &http.Server{Addr: bindAddress, Handler: nil}
+	err := httpServer.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 }
 
