@@ -49,7 +49,7 @@ var codeArtHandler = handlerWithUpdatableState{
 		handler: func(w http.ResponseWriter, r *http.Request, s state) {
 			if ctx := s.(codeArtContext); r.URL.Path == "" { // Gallery
 				renderTemplate(w, "codeArt_gallery", ctx)
-			} else if strings.Count(r.URL.Path, "/") == 3 && strings.HasPrefix(r.URL.Path, resizerPath) { // Resizer
+			} else if strings.Count(r.URL.Path, "/") == 1 && strings.HasPrefix(r.URL.Path, resizerPath) { // Resizer
 				ctx.serveResized(w, r)
 			} else {
 				http.NotFound(w, r)
@@ -63,27 +63,27 @@ var codeArtHandler = handlerWithUpdatableState{
 		ctx := codeArtContext{logger: s.(codeArtContext).logger, Images: make(map[string]*codeArtImage)}
 		if images, err := ioutil.ReadDir(codeArtDir); err == nil {
 			if ctx.ImageSlice == nil {
-				ctx.ImageSlice = make([]codeArtImage, 0, len(images))
+				ctx.ImageSlice = make([]codeArtImage, len(images))
 			}
 			resizeWaiter := sync.WaitGroup{}
-			for i := range rand.New(rand.NewSource(time.Now().UnixNano())).Perm(len(images)) {
+			for i, newI := range rand.New(rand.NewSource(cryptoReadInt64())).Perm(len(images)) {
 				if _, ok := ctx.Images[images[i].Name()]; !ok {
 					imageFileName := images[i].Name()
-					ctx.ImageSlice = append(ctx.ImageSlice, codeArtImage{
+					ctx.ImageSlice[newI] = codeArtImage{
 						Filename: imageFileName,
 						Href:     staticHandlerPath + "codeArt/" + imageFileName,
-						Src:      fmt.Sprintf(codeArtHandlerPath+resizerPath+"\""+imageFileName+"\"/%d/%d", galleryWidth, galleryHeight),
+						Src:      fmt.Sprint(codeArtHandlerPath + resizerPath + "\"" + imageFileName + "\""),
 						Title:    fileNameToTitle(imageFileName),
 						Desc:     "", // TODO: make these fields real
 						Data:     nil,
-					})
+					}
 					resizeWaiter.Add(1)
 					go func(imgInfo *codeArtImage) {
 						defer resizeWaiter.Done()
 						if err := ctx.doResize(imgInfo); err != nil {
 							ctx.logger.Println("error in resizing", err)
 						}
-					}(&ctx.ImageSlice[len(ctx.ImageSlice)-1])
+					}(&ctx.ImageSlice[newI])
 					ctx.logger.Println("resizing", images[i].Name())
 				}
 			}
@@ -99,11 +99,9 @@ var codeArtHandler = handlerWithUpdatableState{
 
 func (ctx *codeArtContext) serveResized(w http.ResponseWriter, r *http.Request) {
 	var fileName string
-	var width, height int
 
-	if _, err := fmt.Sscanf(r.URL.Path, "resizer/%q/%d/%d", &fileName, &width, &height); err != nil {
-		http.NotFound(w, r)
-	} else if width != galleryWidth || height != galleryHeight {
+	if _, err := fmt.Sscanf(r.URL.Path, "resizer/%q", &fileName); err != nil {
+		ctx.logger.Println(r.URL.Path, "didn't match")
 		http.NotFound(w, r)
 	} else if value, ok := ctx.Images[fileName]; !ok {
 		ctx.logger.Println("didn't find", value)
