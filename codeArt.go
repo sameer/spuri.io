@@ -62,7 +62,7 @@ var codeArtHandler = handlerWithUpdatableState{
 	updater: func(s state) state {
 		ctx := codeArtContext{logger: s.(codeArtContext).logger, Images: make(map[string]*codeArtImage)}
 		if images, err := ioutil.ReadDir(codeArtDir); err == nil {
-			if ctx.ImageSlice == nil {
+			if len(ctx.ImageSlice) < len(images) {
 				ctx.ImageSlice = make([]codeArtImage, len(images))
 			}
 			resizeWaiter := sync.WaitGroup{}
